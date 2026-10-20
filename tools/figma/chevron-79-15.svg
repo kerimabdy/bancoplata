@@ -1,0 +1,28 @@
+<svg width="200" height="92" viewBox="0 0 200 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="200" height="92" fill="#F5F5F5"/>
+<g id="Chevron">
+<path d="M-40 -78C-40 -79.1046 -39.1046 -80 -38 -80H408C409.105 -80 410 -79.1046 410 -78V146C410 147.105 409.105 148 408 148H-38C-39.1046 148 -40 147.105 -40 146V-78Z" fill="#F5F7FA"/>
+<path d="M-38 -80V-79H408V-80V-81H-38V-80ZM410 -78H409V146H410H411V-78H410ZM408 148V147H-38V148V149H408V148ZM-40 146H-39V-78H-40H-41V146H-40ZM-38 148V147C-38.5523 147 -39 146.552 -39 146H-40H-41C-41 147.657 -39.6569 149 -38 149V148ZM410 146H409C409 146.552 408.552 147 408 147V148V149C409.657 149 411 147.657 411 146H410ZM408 -80V-79C408.552 -79 409 -78.5523 409 -78H410H411C411 -79.6568 409.657 -81 408 -81V-80ZM-38 -80V-81C-39.6569 -81 -41 -79.6568 -41 -78H-40H-39C-39 -78.5523 -38.5523 -79 -38 -79V-80Z" fill="black" fill-opacity="0.1"/>
+<g id="Chevron_2">
+<rect x="0.5" y="0.5" width="199" height="91" rx="4.5" stroke="#9959FF" stroke-dasharray="6 4"/>
+<g id="direction=right">
+<g id="glyph" clip-path="url(#clip0_66_3)">
+<path id="Vector" d="M39 38L45 44L39 50" stroke="#8A8A8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+<g id="direction=left">
+<g id="glyph_2" clip-path="url(#clip1_66_3)">
+<path id="Vector_2" d="M100 36L90 46L100 56" stroke="#2401FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_66_3">
+<rect width="8" height="14" fill="white" transform="translate(38 37)"/>
+</clipPath>
+<clipPath id="clip1_66_3">
+<rect width="12" height="22" fill="white" transform="translate(89 35)"/>
+</clipPath>
+</defs>
+</svg>
