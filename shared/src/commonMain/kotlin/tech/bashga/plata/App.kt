@@ -1,49 +1,27 @@
 package tech.bashga.plata
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.runtime.Composable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import tech.bashga.plata.data.AppRepository
+import tech.bashga.plata.data.KeyValueStore
+import tech.bashga.plata.data.rememberKeyValueStore
+import tech.bashga.plata.designsystem.foundation.ProvideWindowSafeArea
+import tech.bashga.plata.designsystem.theme.PlataTheme
+import tech.bashga.plata.navigation.PlataApp
 
-import plata.shared.generated.resources.Res
-import plata.shared.generated.resources.compose_multiplatform
+// a ViewModel so the repository lives as long as the process: rotation keeps it, a cold launch builds a new one
+private class AppRepositoryHolder(store: KeyValueStore) : ViewModel() {
+    val repository = AppRepository(store, viewModelScope).also { it.coldLaunch() }
+}
 
 @Composable
-@Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
-            }
+    PlataTheme {
+        ProvideWindowSafeArea {
+            val store = rememberKeyValueStore()
+            PlataApp(viewModel { AppRepositoryHolder(store) }.repository)
         }
     }
 }

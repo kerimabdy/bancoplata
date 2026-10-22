@@ -1,0 +1,174 @@
+package tech.bashga.plata.designsystem.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
+import tech.bashga.plata.designsystem.foundation.GradientText
+import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.icons.Msi
+import tech.bashga.plata.designsystem.icons.PlataIcons
+import tech.bashga.plata.designsystem.theme.PlataTheme
+
+/**
+ * [Regular]: the Home shortcuts, min 80 high, 15pt subtitle (025e71c5, 9f1aa9fc). [Compact]: 72 high, 13pt subtitle,
+ * the stacked pair beside a tall tile (894b1b01). [Tall]: 156 high with the [ShortcutTile] body at the bottom.
+ */
+enum class ShortcutTileSize { Regular, Compact, Tall }
+
+enum class ShortcutTitleTone { Primary, Gradient, Success }
+
+private class ShortcutMetrics(val padding: PaddingValues, val minHeight: Dp, val subtitle: TextStyle, val subtitleGap: Dp)
+
+/**
+ * White radius-20 shortcut. [title] is 17 semibold in [titleTone], optionally after a [titleIcon] (the MSI mark, drawn
+ * in gradients.glyph) and followed by a gradient [titleSecondLine] ("Choose / cashback"). [badge] puts a count in the
+ * top-right corner, [showChevron] a disclosure chevron level with the title. [body] holds an icon row or a SpendOrb.
+ */
+@Composable
+fun ShortcutTile(
+    title: String,
+    modifier: Modifier = Modifier,
+    size: ShortcutTileSize = ShortcutTileSize.Regular,
+    titleTone: ShortcutTitleTone = ShortcutTitleTone.Gradient,
+    titleIcon: ImageVector? = null,
+    titleSecondLine: String? = null,
+    subtitle: String? = null,
+    badge: String? = null,
+    showChevron: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    body: (@Composable () -> Unit)? = null,
+) {
+    val colors = PlataTheme.colors
+    val typography = PlataTheme.typography
+    val spacing = PlataTheme.spacing
+    // measured: Home tiles pad 20 sides / 18 top / 16 bottom; the Credit tiles (894b1b01) pad 16 all round
+    val metrics = when (size) {
+        ShortcutTileSize.Regular -> ShortcutMetrics(
+            PaddingValues(start = spacing.s20, end = spacing.s20, top = 18.dp, bottom = spacing.s16),
+            PlataTheme.sizes.rowAsset,
+            typography.subhead,
+            2.dp,
+        )
+        ShortcutTileSize.Compact -> ShortcutMetrics(PaddingValues(spacing.s16), 72.dp, typography.footnote, 0.dp)
+        ShortcutTileSize.Tall -> ShortcutMetrics(PaddingValues(spacing.s16), 156.dp, typography.footnote, 0.dp)
+    }
+    Box(
+        modifier
+            .then(if (size == ShortcutTileSize.Tall) Modifier.height(metrics.minHeight) else Modifier.heightIn(min = metrics.minHeight))
+            .background(colors.surfaceCard, ContinuousRoundedShape(PlataTheme.radii.xl))
+            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier),
+    ) {
+        Column(Modifier.then(if (size == ShortcutTileSize.Tall) Modifier.fillMaxHeight() else Modifier).padding(metrics.padding)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (titleIcon != null) {
+                    Icon(titleIcon, size = 17.dp, brush = PlataTheme.gradients.glyph)
+                    Spacer(Modifier.width(spacing.s4))
+                }
+                val style = typography.headline
+                when (titleTone) {
+                    ShortcutTitleTone.Gradient -> GradientText(title, style, PlataTheme.gradients.brand, maxLines = 1)
+                    ShortcutTitleTone.Primary -> PlataText(title, style, colors.textPrimary, maxLines = 1)
+                    ShortcutTitleTone.Success -> PlataText(title, style, colors.textSuccess, maxLines = 1)
+                }
+                if (showChevron) {
+                    Spacer(Modifier.weight(1f))
+                    // like ListRow, the chevron ink ends at the padding, so its frame's 5pt inset hangs outside
+                    Chevron(ChevronDirection.Right, Modifier.offset(x = 5.dp))
+                }
+            }
+            if (titleSecondLine != null) GradientText(titleSecondLine, typography.headline, PlataTheme.gradients.brand, maxLines = 1)
+            if (subtitle != null) {
+                Spacer(Modifier.height(metrics.subtitleGap))
+                PlataText(subtitle, metrics.subtitle, colors.textPrimary, maxLines = 1)
+            }
+            if (body != null) {
+                if (size == ShortcutTileSize.Tall) Spacer(Modifier.weight(1f)) else Spacer(Modifier.height(spacing.s4))
+                body()
+            }
+        }
+        if (badge != null) {
+            Badge(badge, Modifier.align(Alignment.TopEnd).padding(top = spacing.s12, end = spacing.s12))
+        }
+    }
+}
+
+/** The cashback-category glyphs under a Regular tile title: 20pt, 8 apart. */
+@Composable
+fun ShortcutTileGlyphRow(glyphs: List<ImageVector>, modifier: Modifier = Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s8)) {
+        glyphs.forEach { Icon(it, size = PlataTheme.sizes.iconSmall) }
+    }
+}
+
+@Preview
+@Composable
+internal fun ShortcutTileRegularPreview() = PlataTheme {
+    ShortcutTile("Cashback", Modifier.width(168.dp)) {
+        ShortcutTileGlyphRow(listOf(PlataIcons.Percent, PlataIcons.Plane, PlataIcons.Music, PlataIcons.ForkKnife))
+    }
+}
+
+@Preview
+@Composable
+internal fun ShortcutTileMsiPreview() = PlataTheme {
+    ShortcutTile(
+        "MSI",
+        Modifier.width(168.dp),
+        titleTone = ShortcutTitleTone.Primary,
+        titleIcon = PlataIcons.Msi,
+        subtitle = "None to defer",
+        badge = "1",
+    )
+}
+
+@Preview
+@Composable
+internal fun ShortcutTileChoosePreview() = PlataTheme {
+    ShortcutTile("Choose", Modifier.width(168.dp), titleTone = ShortcutTitleTone.Primary, titleSecondLine = "cashback", badge = "3")
+}
+
+@Preview
+@Composable
+internal fun ShortcutTileCompactPreview() = PlataTheme {
+    ShortcutTile(
+        "$40",
+        Modifier.width(170.dp),
+        size = ShortcutTileSize.Compact,
+        titleTone = ShortcutTitleTone.Success,
+        subtitle = "Received",
+        showChevron = true,
+    )
+}
+
+@Preview
+@Composable
+internal fun ShortcutTileTallPreview() = PlataTheme {
+    ShortcutTile(
+        "$70",
+        Modifier.width(170.dp),
+        size = ShortcutTileSize.Tall,
+        titleTone = ShortcutTitleTone.Primary,
+        subtitle = "Spent",
+        showChevron = true,
+    ) { SpendOrb(SpendOrbState.Active) }
+}
