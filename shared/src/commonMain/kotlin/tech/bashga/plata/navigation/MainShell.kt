@@ -3,6 +3,7 @@ package tech.bashga.plata.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,8 +23,11 @@ import tech.bashga.plata.data.inviteOffer
 import tech.bashga.plata.designsystem.components.TabBar
 import tech.bashga.plata.designsystem.components.TabBarItemKind
 import tech.bashga.plata.designsystem.components.TabBarTab
+import tech.bashga.plata.designsystem.foundation.LocalBackdrop
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.ProvideBackdrop
 import tech.bashga.plata.designsystem.foundation.ProvideSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropSource
 
 /** Nested graph routes, one per tab with a page of its own. Invite has none: it presents ReferFriend. */
 @Serializable
@@ -83,17 +87,24 @@ fun TabShell(active: TabBarTab?, data: TabBarData, onSelect: (TabBarTab) -> Unit
         return
     }
     val safeArea = PlataSafeArea.current
-    Box(Modifier.fillMaxSize()) {
-        ProvideSafeArea(safeArea.copy(bottom = safeArea.bottom + TabBarRowHeight)) { content() }
-        TabBar(
-            active,
-            Modifier.align(Alignment.BottomCenter),
-            inviteValue = data.inviteValue,
-            inviteKind = data.inviteKind,
-            homeBadge = data.homeBadge,
-            supportBadge = data.supportBadge,
-            onSelect = onSelect,
-        )
+    val screenBackdrop = LocalBackdrop.current
+    ProvideBackdrop {
+        Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize().backdropSource()) {
+                CompositionLocalProvider(LocalBackdrop provides screenBackdrop) {
+                    ProvideSafeArea(safeArea.copy(bottom = safeArea.bottom + TabBarRowHeight)) { content() }
+                }
+            }
+            TabBar(
+                active,
+                Modifier.align(Alignment.BottomCenter),
+                inviteValue = data.inviteValue,
+                inviteKind = data.inviteKind,
+                homeBadge = data.homeBadge,
+                supportBadge = data.supportBadge,
+                onSelect = onSelect,
+            )
+        }
     }
 }
 

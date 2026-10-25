@@ -1,6 +1,5 @@
 package tech.bashga.plata.designsystem.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropBlur
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
@@ -25,8 +25,8 @@ private val TabBarItemTop = 3.dp
 /**
  * The five-tab bar: Home, Payments, Invest, Support and the Invite tab, which shows [inviteValue] as text
  * ([TabBarItemKind.Value], "$200") or behind a flame ([TabBarItemKind.IconValue], "1,500"). [homeBadge] puts a red count
- * on Home (9f1aa9fc), [supportBadge] on Support (b7b04c52). The bar pads the bottom safe area; the source's backdrop blur has no Compose equivalent, so the
- * material is surface/tabbar at 90% only. The home indicator is the system's and is not drawn.
+ * on Home (9f1aa9fc), [supportBadge] on Support (b7b04c52). The bar pads the bottom safe area and blurs the content
+ * behind it (TabShell records it). The home indicator is the system's and is not drawn.
  */
 @Composable
 fun TabBar(
@@ -41,7 +41,7 @@ fun TabBar(
     Column(
         modifier
             .fillMaxWidth()
-            .background(PlataTheme.colors.surfaceTabbar)
+            .backdropBlur(PlataTheme.colors.surfaceTabbarFrost, fallback = PlataTheme.colors.surfaceTabbar)
             .padding(top = TabBarItemTop),
     ) {
         Row(Modifier.fillMaxWidth()) {
