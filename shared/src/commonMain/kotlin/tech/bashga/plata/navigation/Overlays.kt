@@ -68,6 +68,12 @@ internal const val PresentMillis = 350
 val LocalIsTopEntry = compositionLocalOf { true }
 
 /**
+ * How far the layers, sheets and overlays above this content cover it, 0–1. Native views sit above all Compose
+ * drawing, so they fade out by it instead of being drawn over.
+ */
+val LocalCovered = compositionLocalOf<() -> Float> { { 0f } }
+
+/**
  * System back and the iOS edge swipe, for the screen on top only. Use it for back that means something other than
  * "pop me" (a step screen's previous step, DeliveryDetails' close event); without one, back pops the top destination.
  */
@@ -125,6 +131,7 @@ internal sealed interface OverlayKind {
 
 internal class OverlayRequest(kind: OverlayKind, visible: Boolean, content: @Composable () -> Unit) {
     var kind by mutableStateOf(kind)
+    var coversContent by mutableStateOf(true)
     var visible by mutableStateOf(visible)
     var content by mutableStateOf(content)
     var onDismiss: () -> Unit = {}
@@ -150,7 +157,11 @@ private val LocalOverlayHost = staticCompositionLocalOf<OverlayHostState?> { nul
 @Composable
 fun OverlayHost(modifier: Modifier = Modifier, cardTop: Dp = 0.dp, content: @Composable () -> Unit) {
     val host = remember { OverlayHostState() }
-    CompositionLocalProvider(LocalOverlayHost provides host) {
+    val coveredFromAbove = LocalCovered.current
+    val covered = remember(host, coveredFromAbove) {
+        { maxOf(coveredFromAbove(), host.requests.filter { it.coversContent }.maxOfOrNull { it.presented } ?: 0f) }
+    }
+    CompositionLocalProvider(LocalOverlayHost provides host, LocalCovered provides covered) {
         val sheets = host.requests.filter { it.kind is OverlayKind.Sheet }
         val stacked = sheets.filter { (it.kind as OverlayKind.Sheet).backdrop == PageSheetBackdrop.Stacked }.maxOfOrNull { it.presented } ?: 0f
         val dimmed = sheets.filter { (it.kind as OverlayKind.Sheet).backdrop == PageSheetBackdrop.Dimmed }.maxOfOrNull { it.presented } ?: 0f
@@ -204,7 +215,14 @@ private fun OverlayFrame(request: OverlayRequest) {
 }
 
 @Composable
-private fun <T : Any> RegisterOverlay(value: T?, kind: OverlayKind, onDismiss: () -> Unit, dismissOnBack: Boolean, content: @Composable (T) -> Unit) {
+private fun <T : Any> RegisterOverlay(
+    value: T?,
+    kind: OverlayKind,
+    onDismiss: () -> Unit,
+    dismissOnBack: Boolean,
+    coversContent: Boolean = true,
+    content: @Composable (T) -> Unit,
+) {
     val host = LocalOverlayHost.current ?: error("Overlays need an OverlayHost (the nav host and the screenshot harness provide one)")
     var last by remember { mutableStateOf(value) }
     if (value != null) last = value
@@ -212,6 +230,7 @@ private fun <T : Any> RegisterOverlay(value: T?, kind: OverlayKind, onDismiss: (
     val latestContent by rememberUpdatedState(content)
     val request = remember { OverlayRequest(kind, value != null, {}) }
     request.kind = kind
+    request.coversContent = coversContent
     request.visible = value != null
     request.onDismiss = onDismiss
     request.content = { if (shown != null) ProvideBackdrop { latestContent(shown) } }
@@ -226,11 +245,17 @@ private fun <T : Any> RegisterOverlay(value: T?, kind: OverlayKind, onDismiss: (
 /**
  * A dialog, alert, bottom sheet or toast over the host screen, shown while [value] is non-null. [content] draws the
  * whole layer including its scrim (`DialogPlacement`, `ModalScrim`); it keeps the last value while fading out.
- * Back calls [onDismiss] unless [dismissOnBack] is false (toasts).
+ * Back calls [onDismiss] unless [dismissOnBack] is false (toasts). [coversContent] false keeps native views such as the
+ * tab bar showing under it, for overlays that sit clear of them (toasts).
  */
 @Composable
-fun <T : Any> Overlay(value: T?, onDismiss: () -> Unit, dismissOnBack: Boolean = true, content: @Composable (T) -> Unit) =
-    RegisterOverlay(value, OverlayKind.Plain, onDismiss, dismissOnBack, content)
+fun <T : Any> Overlay(
+    value: T?,
+    onDismiss: () -> Unit,
+    dismissOnBack: Boolean = true,
+    coversContent: Boolean = true,
+    content: @Composable (T) -> Unit,
+) = RegisterOverlay(value, OverlayKind.Plain, onDismiss, dismissOnBack, coversContent, content)
 
 /** A page sheet over the host screen that returns to it (Otp, PictureIntro, PersonalDetails, Signature). */
 @Composable
@@ -239,7 +264,7 @@ fun <T : Any> SheetOverlay(
     onDismiss: () -> Unit,
     backdrop: PageSheetBackdrop = PageSheetBackdrop.Stacked,
     content: @Composable (T) -> Unit,
-) = RegisterOverlay(value, OverlayKind.Sheet(backdrop), onDismiss, dismissOnBack = true, content)
+) = RegisterOverlay(value, OverlayKind.Sheet(backdrop), onDismiss, dismissOnBack = true, content = content)
 
 /** Swallows touches so nothing under a presented layer reacts. */
 internal fun Modifier.blockPointers(): Modifier = pointerInput(Unit) {

@@ -251,7 +251,7 @@ fun InvestmentsContent(state: InvestmentsState, onAction: (InvestmentsAction) ->
             }
         }
     }
-    Overlay(state.toast, onDismiss = { onAction(InvestmentsAction.DismissToast) }, dismissOnBack = false) { toast ->
+    Overlay(state.toast, onDismiss = { onAction(InvestmentsAction.DismissToast) }, dismissOnBack = false, coversContent = false) { toast ->
         Box(Modifier.fillMaxSize()) {
             ToastHost(
                 toast.message,

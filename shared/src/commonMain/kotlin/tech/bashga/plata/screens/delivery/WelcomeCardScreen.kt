@@ -109,7 +109,7 @@ fun WelcomeCardContent(state: WelcomeCardState, onAction: (WelcomeCardAction) ->
             PlataText(body, PlataTheme.typography.bodyCompact, PlataTheme.colors.textPrimary, textAlign = TextAlign.Center)
         }
     }
-    Overlay(state.toast, onDismiss = { onAction(WelcomeCardAction.DismissToast) }, dismissOnBack = false) { toast ->
+    Overlay(state.toast, onDismiss = { onAction(WelcomeCardAction.DismissToast) }, dismissOnBack = false, coversContent = false) { toast ->
         Box(Modifier.fillMaxSize().padding(top = PlataSafeArea.current.top + ToastTop), contentAlignment = Alignment.TopCenter) {
             ToastHost(toast.message, onDismiss = { onAction(WelcomeCardAction.DismissToast) })
         }

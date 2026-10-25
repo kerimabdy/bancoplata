@@ -2,6 +2,8 @@ package tech.bashga.plata.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -20,9 +22,11 @@ import tech.bashga.plata.data.LocalAppRepository
 import tech.bashga.plata.data.Stage
 import tech.bashga.plata.data.homeBadge
 import tech.bashga.plata.data.inviteOffer
+import tech.bashga.plata.designsystem.components.NativeTabBar
 import tech.bashga.plata.designsystem.components.TabBar
 import tech.bashga.plata.designsystem.components.TabBarItemKind
 import tech.bashga.plata.designsystem.components.TabBarTab
+import tech.bashga.plata.designsystem.components.hasNativeTabBar
 import tech.bashga.plata.designsystem.foundation.LocalBackdrop
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.ProvideBackdrop
@@ -95,15 +99,28 @@ fun TabShell(active: TabBarTab?, data: TabBarData, onSelect: (TabBarTab) -> Unit
                     ProvideSafeArea(safeArea.copy(bottom = safeArea.bottom + TabBarRowHeight)) { content() }
                 }
             }
-            TabBar(
-                active,
-                Modifier.align(Alignment.BottomCenter),
-                inviteValue = data.inviteValue,
-                inviteKind = data.inviteKind,
-                homeBadge = data.homeBadge,
-                supportBadge = data.supportBadge,
-                onSelect = onSelect,
-            )
+            if (hasNativeTabBar) {
+                NativeTabBar(
+                    active,
+                    inviteValue = data.inviteValue,
+                    inviteKind = data.inviteKind,
+                    homeBadge = data.homeBadge,
+                    supportBadge = data.supportBadge,
+                    covered = LocalCovered.current,
+                    onSelect = onSelect,
+                    modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(TabBarRowHeight + safeArea.bottom),
+                )
+            } else {
+                TabBar(
+                    active,
+                    Modifier.align(Alignment.BottomCenter),
+                    inviteValue = data.inviteValue,
+                    inviteKind = data.inviteKind,
+                    homeBadge = data.homeBadge,
+                    supportBadge = data.supportBadge,
+                    onSelect = onSelect,
+                )
+            }
         }
     }
 }

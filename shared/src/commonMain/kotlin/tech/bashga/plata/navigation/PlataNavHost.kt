@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -174,6 +175,7 @@ fun PlataNavHost(
                     visibility = visibility.getValue(layer.key),
                     stacked = stacked,
                     dimmed = dimmed,
+                    covered = drawn.filter { it.depth == layer.depth + 1 }.maxOfOrNull(presented) ?: 0f,
                     isTop = layer.top == topEntry,
                     blocksBelow = layer.depth > 0,
                     baseFrame = { content -> baseFrame(layer.top, content) },
@@ -289,11 +291,13 @@ internal fun LayerFrame(
     isTop: Boolean,
     blocksBelow: Boolean,
     baseFrame: @Composable (content: @Composable () -> Unit) -> Unit,
+    covered: Float = maxOf(stacked, dimmed),
     leaving: Boolean = false,
     onSheetDrag: (Float) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val cardTop = if (presentation == Presentation.Sheet) PageSheetTop else 0.dp
+    val coveredState = rememberUpdatedState(covered)
     Box(
         Modifier
             .fillMaxSize()
@@ -312,15 +316,17 @@ internal fun LayerFrame(
             .then(if (blocksBelow) Modifier.blockPointers() else Modifier),
     ) {
         SheetPresenter(stacked, dimmed, cardTop = cardTop) {
-            OverlayHost(cardTop = cardTop) {
-                ProvideBackdrop {
-                    when (presentation) {
-                        Presentation.Push -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { baseFrame(content) }
-                        Presentation.Sheet -> {
-                            val dispatchBack = rememberDispatchBack()
-                            PageSheetSurface(Modifier.swipeToDismiss(dispatchBack, onSheetDrag)) { content() }
+            CompositionLocalProvider(LocalCovered provides { coveredState.value }) {
+                OverlayHost(cardTop = cardTop) {
+                    ProvideBackdrop {
+                        when (presentation) {
+                            Presentation.Push -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { baseFrame(content) }
+                            Presentation.Sheet -> {
+                                val dispatchBack = rememberDispatchBack()
+                                PageSheetSurface(Modifier.swipeToDismiss(dispatchBack, onSheetDrag)) { content() }
+                            }
+                            Presentation.Cover -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { content() }
                         }
-                        Presentation.Cover -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { content() }
                     }
                 }
             }
@@ -530,6 +536,7 @@ internal fun StaticLayers(layers: List<StaticLayer>, baseFrame: @Composable (con
                 dimmed = if (backdrop == PageSheetBackdrop.Dimmed) 1f else 0f,
                 isTop = index == layers.lastIndex,
                 blocksBelow = index > 0,
+                covered = if (index < layers.lastIndex) 1f else 0f,
                 baseFrame = if (index == 0) baseFrame else { content -> content() },
                 content = layer.content,
             )
