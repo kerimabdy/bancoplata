@@ -24,6 +24,7 @@ import plata.shared.generated.resources.raster_logo_nike
 import plata.shared.generated.resources.raster_tile_mercadolibre
 import plata.shared.generated.resources.raster_tile_nike
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -53,7 +54,7 @@ fun ImageTile(
             .clip(ContinuousRoundedShape(PlataTheme.radii.md))
             .pressable(onClick = onClick),
     ) {
-        Image(image, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        ProgressiveBlurImage(image, Modifier.matchParentSize(), from = 0.45f, radius = 12.dp)
         if (logo != null) Box(Modifier.padding(PlataTheme.spacing.s12)) { logo() }
         Column(Modifier.align(Alignment.BottomStart).padding(PlataTheme.spacing.s12)) {
             PlataText(name, typography.bodyCompact.copy(fontWeight = FontWeight.Bold), colors.textOnDark)

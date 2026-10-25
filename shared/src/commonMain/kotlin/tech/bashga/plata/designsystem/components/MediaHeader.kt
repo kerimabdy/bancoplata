@@ -30,6 +30,7 @@ import plata.shared.generated.resources.raster_logo_vanguard
 import plata.shared.generated.resources.raster_media_partners
 import plata.shared.generated.resources.raster_media_vanguard
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
@@ -152,7 +153,7 @@ private val PageDotsHeight = 8.dp
 
 @Composable
 private fun MediaBackground(image: DrawableResource) {
-    Image(painterResource(image), contentDescription = null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+    ProgressiveBlurImage(painterResource(image), Modifier.fillMaxSize())
 }
 
 @Preview

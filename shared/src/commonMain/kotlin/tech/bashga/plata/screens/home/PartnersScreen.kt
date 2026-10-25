@@ -51,6 +51,7 @@ import plata.shared.generated.resources.raster_logo_nike
 import plata.shared.generated.resources.raster_media_booking
 import plata.shared.generated.resources.raster_media_partners
 import tech.bashga.plata.designsystem.components.BrandLogo
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.components.BrandLogoSize
 import tech.bashga.plata.designsystem.components.Chip
 import tech.bashga.plata.designsystem.components.MediaHeader
@@ -161,7 +162,7 @@ fun PartnersContent(state: PartnersState, onAction: (PartnersAction) -> Unit, mo
                     }
                 },
             ) { page ->
-                Image(painterResource(featured[page % featured.size].background), contentDescription = null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                ProgressiveBlurImage(painterResource(featured[page % featured.size].background), Modifier.fillMaxSize())
             }
         },
         chips = {

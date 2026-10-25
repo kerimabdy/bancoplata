@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import tech.bashga.plata.designsystem.components.BrandLogo
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.components.BrandLogoSize
 import tech.bashga.plata.designsystem.components.Button
 import tech.bashga.plata.designsystem.components.ButtonSize
@@ -87,7 +88,7 @@ fun MsiPartnerDetailContent(state: MsiPartnerDetailState, onAction: (MsiPartnerD
         Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             val photo = partner.photo ?: partner.tile
             if (photo != null) {
-                Image(painterResource(photo), contentDescription = null, modifier = Modifier.fillMaxWidth().height(PhotoHeight), contentScale = ContentScale.Crop)
+                ProgressiveBlurImage(painterResource(photo), Modifier.fillMaxWidth().height(PhotoHeight))
             } else {
                 Box(Modifier.fillMaxWidth().height(PhotoHeight).background(PlataTheme.gradients.violet))
             }

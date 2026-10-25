@@ -43,6 +43,7 @@ import plata.shared.generated.resources.raster_logo_fiserv
 import plata.shared.generated.resources.raster_logo_mercadopago
 import plata.shared.generated.resources.raster_media_msi_partners
 import tech.bashga.plata.data.AppRepository
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.data.LocalAppRepository
 import tech.bashga.plata.data.formatMoney
 import tech.bashga.plata.designsystem.components.BrandLogo
@@ -189,7 +190,7 @@ fun MsiPartnersContent(state: MsiPartnersState, onAction: (MsiPartnersAction) ->
                     ) { BrandLogo(painterResource(partner.logo), BrandLogoSize.S40) }
                 },
             ) {
-                Image(painterResource(Res.drawable.raster_media_msi_partners), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                ProgressiveBlurImage(painterResource(Res.drawable.raster_media_msi_partners), Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(FirstSectionTop))
             SectionHeader("Terminals with MSI", Modifier.padding(horizontal = spacing.screenMargin))

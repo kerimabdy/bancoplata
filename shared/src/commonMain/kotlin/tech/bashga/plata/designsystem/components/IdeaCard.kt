@@ -20,6 +20,7 @@ import plata.shared.generated.resources.Res
 import plata.shared.generated.resources.raster_idea_vanguard
 import plata.shared.generated.resources.raster_logo_vanguard
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -47,7 +48,7 @@ fun IdeaCard(
             .clip(ContinuousRoundedShape(PlataTheme.radii.xl))
             .pressable(onClick = onClick),
     ) {
-        Image(image, null, Modifier.matchParentSize(), contentScale = ContentScale.Crop)
+        ProgressiveBlurImage(image, Modifier.matchParentSize())
         if (logo != null) Box(Modifier.padding(spacing.cardPadding)) { logo() }
         if (status != null) Pill(status, Modifier.align(Alignment.TopEnd).padding(spacing.cardPadding), tone = PillTone.Glass)
         Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(spacing.cardPadding)) {
