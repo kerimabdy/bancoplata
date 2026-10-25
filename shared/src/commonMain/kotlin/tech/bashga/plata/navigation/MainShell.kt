@@ -86,21 +86,20 @@ val AppSnapshot.tabBarData: TabBarData
  */
 @Composable
 fun TabShell(active: TabBarTab?, data: TabBarData, onSelect: (TabBarTab) -> Unit, content: @Composable () -> Unit) {
-    if (active == null) {
-        content()
-        return
-    }
     val safeArea = PlataSafeArea.current
     val screenBackdrop = LocalBackdrop.current
+    val barHeight = if (active != null) TabBarRowHeight else 0.dp
+    // the same tree with or without the bar: a different one would remount the nav stack and drop its push motion
     ProvideBackdrop {
         Box(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().backdropSource()) {
                 CompositionLocalProvider(LocalBackdrop provides screenBackdrop) {
-                    ProvideSafeArea(safeArea.copy(bottom = safeArea.bottom + TabBarRowHeight)) { content() }
+                    ProvideSafeArea(safeArea.copy(bottom = safeArea.bottom + barHeight)) { content() }
                 }
             }
-            if (hasNativeTabBar) {
-                NativeTabBar(
+            when {
+                active == null -> Unit
+                hasNativeTabBar -> NativeTabBar(
                     active,
                     inviteValue = data.inviteValue,
                     inviteKind = data.inviteKind,
@@ -110,8 +109,7 @@ fun TabShell(active: TabBarTab?, data: TabBarData, onSelect: (TabBarTab) -> Unit
                     onSelect = onSelect,
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(TabBarRowHeight + safeArea.bottom),
                 )
-            } else {
-                TabBar(
+                else -> TabBar(
                     active,
                     Modifier.align(Alignment.BottomCenter),
                     inviteValue = data.inviteValue,
