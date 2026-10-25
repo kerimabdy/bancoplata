@@ -36,6 +36,8 @@ enum class SectionCardBorder { None, Gradient }
  * or [SectionCardAmount] ("$200", d2e81313). Without a [title] the card is body only (4e9baf69).
  * [headerGap] and [bodySpacing] vary per screen (header→body 23 on 22bf11f1, 22 on f1b38f8d, 6 on d2e81313).
  * [border] Gradient draws the 2pt pastel ring of the AI card (f1b38f8d) inside the card's bounds.
+ * [headerPadding] pads the header alone: a card whose body scrolls sideways drops its side [contentPadding] so the
+ * scroll runs to the card's edges, and gives the header that padding here and the scroll its own content padding.
  */
 @Composable
 fun SectionCard(
@@ -49,6 +51,7 @@ fun SectionCard(
     headerGap: Dp = PlataTheme.spacing.s20,
     bodySpacing: Dp = 0.dp,
     contentPadding: PaddingValues = PaddingValues(PlataTheme.spacing.cardPadding),
+    headerPadding: PaddingValues = PaddingValues(0.dp),
     body: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = ContinuousRoundedShape(PlataTheme.radii.xl)
@@ -62,7 +65,7 @@ fun SectionCard(
         if (title != null) {
             SectionHeader(
                 title,
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().padding(headerPadding),
                 emphasis = titleEmphasis,
                 emphasisBrush = titleBrush,
                 leading = headerLeading,

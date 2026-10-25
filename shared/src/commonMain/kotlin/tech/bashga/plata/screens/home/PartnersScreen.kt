@@ -3,18 +3,19 @@ package tech.bashga.plata.screens.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -167,7 +168,7 @@ fun PartnersContent(state: PartnersState, onAction: (PartnersAction) -> Unit, mo
             }
         },
         chips = {
-            PartnerFilter.entries.forEach { filter ->
+            items(PartnerFilter.entries) { filter ->
                 Chip(filter.label, filter.glyph, selected = state.category == filter, onClick = { onAction(PartnersAction.ToggleCategory(filter)) })
             }
         },
@@ -195,7 +196,7 @@ fun PartnerDirectoryContent(
     collapseAfter: Dp,
     onBack: () -> Unit,
     header: @Composable () -> Unit,
-    chips: @Composable RowScope.() -> Unit,
+    chips: LazyListScope.() -> Unit,
     modifier: Modifier = Modifier,
     items: @Composable ColumnScope.() -> Unit,
 ) {
@@ -205,8 +206,8 @@ fun PartnerDirectoryContent(
         Column(Modifier.fillMaxSize().testTag("directory-scroll").backdropSource().verticalScroll(scroll)) {
             header()
             Spacer(Modifier.height(spacing.s20))
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = spacing.screenMargin),
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = spacing.screenMargin),
                 horizontalArrangement = Arrangement.spacedBy(spacing.s12),
                 content = chips,
             )

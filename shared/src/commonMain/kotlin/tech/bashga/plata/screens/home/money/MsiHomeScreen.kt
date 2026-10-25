@@ -1,25 +1,23 @@
 package tech.bashga.plata.screens.home.money
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -131,17 +129,16 @@ fun MsiHomeContent(state: MsiHomeState, onAction: (MsiHomeAction) -> Unit, modif
                 SectionCard(
                     title = "${state.partnerCount} MSI Partners",
                     headerTrailing = { SectionCardAction("Show all", { onAction(MsiHomeAction.ShowAllPartners) }) },
+                    contentPadding = PaddingValues(vertical = spacing.cardPadding),
+                    headerPadding = PaddingValues(horizontal = spacing.cardPadding),
                 ) {
-                    Row(
-                        Modifier.bleedEnd(spacing.cardPadding).horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(TileGap),
-                    ) {
-                        state.featured.forEach { partner ->
-                            val tile = partner.tile ?: return@forEach
+                    // the row scrolls to the card's edges, where its shape clips it (d7d78e0b)
+                    LazyRow(contentPadding = PaddingValues(horizontal = spacing.cardPadding), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
+                        items(state.featured.filter { it.tile != null }) { partner ->
                             ImageTile(
                                 partner.name,
                                 "Min ${partner.minimumText}",
-                                painterResource(tile),
+                                painterResource(checkNotNull(partner.tile)),
                                 logo = { BrandLogo(painterResource(partner.logo), BrandLogoSize.S40) },
                                 onClick = { onAction(MsiHomeAction.OpenPartner(partner.id)) },
                             )
@@ -163,9 +160,3 @@ fun MsiHomeContent(state: MsiHomeState, onAction: (MsiHomeAction) -> Unit, modif
     }
 }
 
-/** Lets a row run past the card's end padding to its edge, where the card's shape clips it (d7d78e0b). */
-private fun Modifier.bleedEnd(amount: Dp) = layout { measurable, constraints ->
-    val extra = amount.roundToPx()
-    val placeable = measurable.measure(constraints.copy(maxWidth = constraints.maxWidth + extra, minWidth = constraints.minWidth + extra))
-    layout(constraints.maxWidth, placeable.height) { placeable.place(0, 0) }
-}

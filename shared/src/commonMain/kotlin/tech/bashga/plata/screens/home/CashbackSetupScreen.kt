@@ -2,7 +2,6 @@ package tech.bashga.plata.screens.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -286,33 +286,40 @@ private fun ConfirmedStep(onAction: (CashbackSetupAction) -> Unit, modifier: Mod
         SectionCard(
             Modifier.padding(horizontal = spacing.screenMargin).fillMaxWidth(),
             title = "Get more cashback",
-            headerTrailing = { SectionCardAction("Show all", { onAction(CashbackSetupAction.ShowAllPartners) }, Modifier.padding(end = spacing.cardPadding)) },
-            contentPadding = PaddingValues(start = spacing.cardPadding, top = spacing.cardPadding, bottom = spacing.cardPadding),
+            headerTrailing = { SectionCardAction("Show all", { onAction(CashbackSetupAction.ShowAllPartners) }) },
+            contentPadding = PaddingValues(vertical = spacing.cardPadding),
+            headerPadding = PaddingValues(horizontal = spacing.cardPadding),
         ) {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
-                ImageTile(
-                    "Nike",
-                    "10%",
-                    painterResource(Res.drawable.raster_tile_nike),
-                    footer = ImageTileFooter.Percent,
-                    logo = { BrandLogo(painterResource(Res.drawable.raster_logo_nike), BrandLogoSize.S40) },
-                    onClick = { onAction(CashbackSetupAction.OpenPartner("Nike")) },
-                )
-                ImageTile(
-                    "Booking",
-                    "4%",
-                    painterResource(Res.drawable.raster_tile_booking),
-                    footer = ImageTileFooter.Percent,
-                    logo = { BrandLogo(painterResource(Res.drawable.raster_logo_booking), BrandLogoSize.S40) },
-                    onClick = { onAction(CashbackSetupAction.OpenPartner("Booking")) },
-                )
-                ImageTile(
-                    "Temu",
-                    "30%",
-                    painterResource(Res.drawable.raster_tile_temu),
-                    footer = ImageTileFooter.Percent,
-                    onClick = { onAction(CashbackSetupAction.OpenPartner("Temu")) },
-                )
+            LazyRow(contentPadding = PaddingValues(horizontal = spacing.cardPadding), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
+                item {
+                    ImageTile(
+                        "Nike",
+                        "10%",
+                        painterResource(Res.drawable.raster_tile_nike),
+                        footer = ImageTileFooter.Percent,
+                        logo = { BrandLogo(painterResource(Res.drawable.raster_logo_nike), BrandLogoSize.S40) },
+                        onClick = { onAction(CashbackSetupAction.OpenPartner("Nike")) },
+                    )
+                }
+                item {
+                    ImageTile(
+                        "Booking",
+                        "4%",
+                        painterResource(Res.drawable.raster_tile_booking),
+                        footer = ImageTileFooter.Percent,
+                        logo = { BrandLogo(painterResource(Res.drawable.raster_logo_booking), BrandLogoSize.S40) },
+                        onClick = { onAction(CashbackSetupAction.OpenPartner("Booking")) },
+                    )
+                }
+                item {
+                    ImageTile(
+                        "Temu",
+                        "30%",
+                        painterResource(Res.drawable.raster_tile_temu),
+                        footer = ImageTileFooter.Percent,
+                        onClick = { onAction(CashbackSetupAction.OpenPartner("Temu")) },
+                    )
+                }
             }
         }
         Spacer(Modifier.height(spacing.s20))

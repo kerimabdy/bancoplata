@@ -2,21 +2,23 @@ package tech.bashga.plata.screens.payments
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -230,12 +232,17 @@ fun PaymentsContent(state: PaymentsState, onAction: (PaymentsAction) -> Unit, mo
                     title = "Favorites",
                     headerGap = CardHeaderGap,
                     headerTrailing = if (state.favorites.isEmpty()) null else { { SectionCardAction("Edit", { onAction(PaymentsAction.EditFavorites) }) } },
+                    contentPadding = PaddingValues(vertical = spacing.cardPadding),
+                    headerPadding = PaddingValues(horizontal = spacing.cardPadding),
                 ) {
-                    Row(Modifier.bleed(GridBleed).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(FavoritesGap)) {
-                        state.favorites.forEach { favorite ->
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = spacing.cardPadding - GridBleed),
+                        horizontalArrangement = Arrangement.spacedBy(FavoritesGap),
+                    ) {
+                        items(state.favorites) { favorite ->
                             GridItem(favorite.name, Modifier.width(GridItemWidth), onClick = { onAction(PaymentsAction.NotBuilt) }) { FavoriteArt(favorite) }
                         }
-                        GridItem("Add", Modifier.width(GridItemWidth), onClick = { onAction(PaymentsAction.EditFavorites) }) { IconCircle(PlataIcons.Plus, IconCircleSize.S56) }
+                        item { GridItem("Add", Modifier.width(GridItemWidth), onClick = { onAction(PaymentsAction.EditFavorites) }) { IconCircle(PlataIcons.Plus, IconCircleSize.S56) } }
                     }
                 }
                 SectionCard(

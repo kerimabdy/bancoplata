@@ -2,17 +2,18 @@ package tech.bashga.plata.screens.home.money
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -170,7 +171,7 @@ fun MsiPartnersContent(state: MsiPartnersState, onAction: (MsiPartnersAction) ->
     val safeArea = PlataSafeArea.current
     val scroll = rememberScrollState()
     val pager = rememberPagerState { state.hero.size }
-    val chipRow = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = spacing.screenMargin)
+    val chipPadding = PaddingValues(horizontal = spacing.screenMargin)
     Box(modifier.fillMaxSize().background(colors.surfaceBackground)) {
         Column(Modifier.fillMaxSize().testTag("msi-partners").backdropSource().verticalScroll(scroll).padding(bottom = safeArea.bottom + FeedBottom)) {
             MediaHeader(
@@ -196,16 +197,16 @@ fun MsiPartnersContent(state: MsiPartnersState, onAction: (MsiPartnersAction) ->
             Spacer(Modifier.height(FirstSectionTop))
             SectionHeader("Terminals with MSI", Modifier.padding(horizontal = spacing.screenMargin))
             Spacer(Modifier.height(spacing.s20))
-            Row(chipRow, horizontalArrangement = Arrangement.spacedBy(ChipGap)) {
-                TerminalProvider.entries.forEach { provider ->
+            LazyRow(contentPadding = chipPadding, horizontalArrangement = Arrangement.spacedBy(ChipGap)) {
+                items(TerminalProvider.entries) { provider ->
                     Chip(provider.label, painterResource(provider.logo), onClick = { onAction(MsiPartnersAction.OpenTerminal(provider)) })
                 }
             }
             Spacer(Modifier.height(SectionTop))
             SectionHeader("Stores with MSI", Modifier.padding(horizontal = spacing.screenMargin).testTag("stores-with-msi"))
             Spacer(Modifier.height(spacing.s20))
-            Row(chipRow, horizontalArrangement = Arrangement.spacedBy(ChipGap)) {
-                storeChips.forEach { (category, icon) ->
+            LazyRow(contentPadding = chipPadding, horizontalArrangement = Arrangement.spacedBy(ChipGap)) {
+                items(storeChips) { (category, icon) ->
                     Chip(category.label, icon, selected = state.category == category, onClick = { onAction(MsiPartnersAction.SelectCategory(category)) })
                 }
             }

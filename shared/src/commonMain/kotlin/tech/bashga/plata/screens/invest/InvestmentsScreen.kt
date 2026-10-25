@@ -2,7 +2,6 @@ package tech.bashga.plata.screens.invest
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +15,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -26,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
@@ -236,6 +236,10 @@ fun InvestmentsContent(state: InvestmentsState, onAction: (InvestmentsAction) ->
             Column(Modifier.padding(horizontal = spacing.screenMargin)) {
                 InvestmentsFeed(state, onAction)
             }
+            LearnInvestment(onAction)
+            Column(Modifier.padding(horizontal = spacing.screenMargin)) {
+                InvestmentsFeedEnd(state, onAction)
+            }
             Spacer(Modifier.height(safeBottom + spacing.cardGap))
         }
         if (collapsed) {
@@ -308,10 +312,11 @@ private fun InvestmentsFeed(state: InvestmentsState, onAction: (InvestmentsActio
             Modifier.fillMaxWidth(),
             title = "Recents",
             headerGap = RecentsGap,
-            contentPadding = PaddingValues(start = spacing.cardPadding, top = RecentsTop, end = spacing.cardPadding, bottom = spacing.cardPadding),
+            contentPadding = PaddingValues(top = RecentsTop, bottom = spacing.cardPadding),
+            headerPadding = PaddingValues(horizontal = spacing.cardPadding),
         ) {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(spacing.s8)) {
-                state.recents.forEach { ticker ->
+            LazyRow(contentPadding = PaddingValues(horizontal = spacing.cardPadding), horizontalArrangement = Arrangement.spacedBy(spacing.s8)) {
+                items(state.recents) { ticker ->
                     Chip(ticker, painterResource(InvestCatalog.asset(ticker).logo), tone = ChipTone.Grey, onClick = { openStock(ticker) })
                 }
             }
@@ -394,47 +399,53 @@ private fun InvestmentsFeed(state: InvestmentsState, onAction: (InvestmentsActio
         modifier = Modifier.fillMaxWidth().testTag("commodities-etfs"),
     )
     Spacer(Modifier.height(sectionGap))
+}
+
+@Composable
+private fun LearnInvestment(onAction: (InvestmentsAction) -> Unit) {
+    val spacing = PlataTheme.spacing
     SectionHeader(
         "Learn investment",
-        Modifier.fillMaxWidth(),
+        Modifier.fillMaxWidth().padding(horizontal = spacing.screenMargin),
         trailing = { TextButton("See all", { onAction(InvestmentsAction.OpenLesson(InvestLessons.WHY_INVESTING_MATTERS)) }, weight = TextButtonWeight.Semibold) },
     )
     Spacer(Modifier.height(spacing.s20))
-    Row(
-        Modifier
-            // the pager runs to the screen edge, past the feed's 20 margin
-            .layout { measurable, constraints ->
-                val extra = spacing.screenMargin.roundToPx()
-                val placeable = measurable.measure(constraints.copy(maxWidth = constraints.maxWidth + extra))
-                layout(constraints.maxWidth, placeable.height) { placeable.place(0, 0) }
-            }
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(spacing.s12),
-    ) {
-        LessonCard(
-            "Why investing\nmatters",
-            "3-minute read",
-            Modifier.width(LessonPageWidth),
-            size = LessonCardSize.Large,
-            onClick = { onAction(InvestmentsAction.OpenLesson(InvestLessons.WHY_INVESTING_MATTERS)) },
-            thumbnail = { Image(painterResource(Res.drawable.raster_lesson_why_investing), null, Modifier.size(139.dp, 175.dp)) },
-            action = {
-                Button("Lesson 2", { onAction(InvestmentsAction.OpenLesson(InvestLessons.HOW_TO_BUY_STOCKS)) }, size = ButtonSize.Small, icon = PlataIcons.Play)
-            },
-        )
-        LessonCard(
-            "Stocks vs ETFs",
-            "3-minute read",
-            Modifier.width(LessonPageWidth),
-            size = LessonCardSize.Large,
-            onClick = { onAction(InvestmentsAction.OpenLesson(InvestLessons.STOCKS_VS_ETFS)) },
-            thumbnail = { Image(painterResource(Res.drawable.raster_lesson_stocks_etfs), null, Modifier.size(139.dp, 175.dp)) },
-            action = {
-                Button("Lesson 3", { onAction(InvestmentsAction.OpenLesson(InvestLessons.STOCKS_VS_ETFS)) }, size = ButtonSize.Small, icon = PlataIcons.Play)
-            },
-        )
-        Spacer(Modifier.width(spacing.s8))
+    LazyRow(contentPadding = PaddingValues(horizontal = spacing.screenMargin), horizontalArrangement = Arrangement.spacedBy(spacing.s12)) {
+        item {
+            LessonCard(
+                "Why investing\nmatters",
+                "3-minute read",
+                Modifier.width(LessonPageWidth),
+                size = LessonCardSize.Large,
+                onClick = { onAction(InvestmentsAction.OpenLesson(InvestLessons.WHY_INVESTING_MATTERS)) },
+                thumbnail = { Image(painterResource(Res.drawable.raster_lesson_why_investing), null, Modifier.size(139.dp, 175.dp)) },
+                action = {
+                    Button("Lesson 2", { onAction(InvestmentsAction.OpenLesson(InvestLessons.HOW_TO_BUY_STOCKS)) }, size = ButtonSize.Small, icon = PlataIcons.Play)
+                },
+            )
+        }
+        item {
+            LessonCard(
+                "Stocks vs ETFs",
+                "3-minute read",
+                Modifier.width(LessonPageWidth),
+                size = LessonCardSize.Large,
+                onClick = { onAction(InvestmentsAction.OpenLesson(InvestLessons.STOCKS_VS_ETFS)) },
+                thumbnail = { Image(painterResource(Res.drawable.raster_lesson_stocks_etfs), null, Modifier.size(139.dp, 175.dp)) },
+                action = {
+                    Button("Lesson 3", { onAction(InvestmentsAction.OpenLesson(InvestLessons.STOCKS_VS_ETFS)) }, size = ButtonSize.Small, icon = PlataIcons.Play)
+                },
+            )
+        }
     }
+}
+
+@Composable
+private fun InvestmentsFeedEnd(state: InvestmentsState, onAction: (InvestmentsAction) -> Unit) {
+    val spacing = PlataTheme.spacing
+    val cardGap = spacing.cardGap
+    val sectionGap = spacing.sectionGap
+    val openStock: (String) -> Unit = { onAction(InvestmentsAction.OpenStock(it)) }
     Spacer(Modifier.height(sectionGap))
     ListingTileCard(
         "Short term bonds ETFs",
