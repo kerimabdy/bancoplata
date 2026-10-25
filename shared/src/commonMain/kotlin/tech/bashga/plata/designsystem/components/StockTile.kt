@@ -4,8 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +20,7 @@ import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /**
- * 98×136 grey ticker tile, top-aligned: 56 [logo] 16 from the top, the 15 semibold ticker 11 below, then the trend in
+ * 136-high grey ticker tile, as wide as its grid cell (98 in the source), top-aligned: 56 [logo] 16 from the top, the 15 semibold ticker 11 below, then the trend in
  * 13 (3d1d2b9b). Sits on white cards.
  */
 @Composable
@@ -34,7 +34,7 @@ fun StockTile(
 ) {
     Column(
         modifier
-            .size(98.dp, 136.dp)
+            .height(136.dp)
             .background(PlataTheme.colors.surfaceBackground, ContinuousRoundedShape(PlataTheme.radii.lg))
             .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .padding(top = PlataTheme.spacing.s16),
@@ -51,7 +51,7 @@ fun StockTile(
 @Preview
 @Composable
 internal fun StockTilePreview() = PlataTheme {
-    StockTile("MSFT", "1.72%", TrendDirection.Up) {
+    StockTile("MSFT", "1.72%", TrendDirection.Up, Modifier.width(98.dp)) {
         BrandLogo(painterResource(Res.drawable.raster_logo_microsoft), BrandLogoSize.S56, light = true)
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -233,7 +232,7 @@ fun HomeScreen(
 private val GreetingTop = 45.dp
 private val GreetingToHeadline = 48.5.dp
 private val HeadlineToTiles = 36.dp
-private val ShortcutWidth = 168.dp
+private val ShortcutGap = 17.dp
 // ec4a6b30: avatar at y 110, title box at 208.5, card at 314
 private val ComingGreetingTop = 51.dp
 private val ComingGreetingToTitle = 43.5.dp
@@ -307,25 +306,25 @@ private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
     PromoHeadline("Use your card", Modifier.padding(horizontal = spacing.s40), line2 = "to get cashback", onClick = { onAction(HomeAction.OpenCashback) })
     Spacer(Modifier.height(HeadlineToTiles))
     Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
             val cashback = { onAction(HomeAction.OpenCashback) }
             if (state.cashback.isEmpty()) {
                 ShortcutTile(
                     "Choose",
-                    Modifier.width(ShortcutWidth),
+                    Modifier.weight(1f),
                     titleTone = ShortcutTitleTone.Primary,
                     titleSecondLine = "cashback",
                     badge = "3",
                     onClick = cashback,
                 )
             } else {
-                ShortcutTile("Cashback", Modifier.width(ShortcutWidth), onClick = cashback) {
+                ShortcutTile("Cashback", Modifier.weight(1f), onClick = cashback) {
                     ShortcutTileGlyphRow(CashbackCategory.entries.filter { it in state.cashback }.mapNotNull { it.glyph })
                 }
             }
             ShortcutTile(
                 "MSI",
-                Modifier.width(ShortcutWidth),
+                Modifier.weight(1f),
                 titleTone = ShortcutTitleTone.Primary,
                 titleIcon = PlataIcons.Msi,
                 subtitle = if (state.msiVisited) "109 partners" else "None to defer",

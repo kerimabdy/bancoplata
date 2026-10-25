@@ -35,7 +35,6 @@ import tech.bashga.plata.data.creditAvailable
 import tech.bashga.plata.data.formatMoney
 import tech.bashga.plata.data.spent
 import tech.bashga.plata.designsystem.components.ActionTile
-import tech.bashga.plata.designsystem.components.ActionTileLayout
 import tech.bashga.plata.designsystem.components.BalanceHeader
 import tech.bashga.plata.designsystem.components.Button
 import tech.bashga.plata.designsystem.components.ButtonSize
@@ -155,10 +154,10 @@ fun PlataCreditoContent(state: PlataCreditoState, onAction: (PlataCreditoAction)
                 Modifier.padding(horizontal = spacing.screenMargin),
                 verticalArrangement = Arrangement.spacedBy(spacing.cardGap),
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    ActionTile("Top-up", PlataIcons.TopUp, layout = ActionTileLayout.Third, iconSize = TileGlyph, onClick = {})
-                    ActionTile("Bill pay", PlataIcons.BillPay, layout = ActionTileLayout.Third, iconSize = TileGlyph, onClick = {})
-                    ActionTile("Transfer", PlataIcons.Transfer, layout = ActionTileLayout.Third, iconSize = TileGlyph, onClick = {})
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.s20)) {
+                    ActionTile("Top-up", PlataIcons.TopUp, Modifier.weight(1f), iconSize = TileGlyph, onClick = {})
+                    ActionTile("Bill pay", PlataIcons.BillPay, Modifier.weight(1f), iconSize = TileGlyph, onClick = {})
+                    ActionTile("Transfer", PlataIcons.Transfer, Modifier.weight(1f), iconSize = TileGlyph, onClick = {})
                 }
                 SummaryCard(
                     "Transactions",

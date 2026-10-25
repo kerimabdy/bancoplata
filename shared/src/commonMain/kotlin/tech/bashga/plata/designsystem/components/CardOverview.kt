@@ -138,15 +138,15 @@ fun CardOverview(
                     Row(horizontalArrangement = Arrangement.spacedBy(spacing.s20)) {
                         val tile = Modifier.weight(1f)
                         Crossfade(frozen, tile, animationSpec = tween(HeaderFadeMillis), label = "freeze tile") { isFrozen ->
-                            // fillMaxWidth keeps the weighted cell width, which a Crossfade box would otherwise relax to 104
+                            // fillMaxWidth keeps the weighted cell width, which a Crossfade box would otherwise wrap
                             if (isFrozen) {
-                                ActionTile("Unfreeze", PlataIcons.Unfreeze, Modifier.fillMaxWidth(), layout = ActionTileLayout.Third, onClick = onFreeze)
+                                ActionTile("Unfreeze", PlataIcons.Unfreeze, Modifier.fillMaxWidth(), onClick = onFreeze)
                             } else {
-                                ActionTile("Freeze", PlataIcons.Snowflake, Modifier.fillMaxWidth(), layout = ActionTileLayout.Third, onClick = onFreeze)
+                                ActionTile("Freeze", PlataIcons.Snowflake, Modifier.fillMaxWidth(), onClick = onFreeze)
                             }
                         }
-                        ActionTile("Reissue", PlataIcons.Refresh, tile, layout = ActionTileLayout.Third, onClick = onReissue)
-                        ActionTile("Discard", PlataIcons.Discard, tile, layout = ActionTileLayout.Third, onClick = onDiscard)
+                        ActionTile("Reissue", PlataIcons.Refresh, tile, onClick = onReissue)
+                        ActionTile("Discard", PlataIcons.Discard, tile, onClick = onDiscard)
                     }
                 }
             }

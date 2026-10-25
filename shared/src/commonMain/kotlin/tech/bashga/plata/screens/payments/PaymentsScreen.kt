@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -50,6 +51,7 @@ import tech.bashga.plata.designsystem.components.Button
 import tech.bashga.plata.designsystem.components.Dialog
 import tech.bashga.plata.designsystem.components.DialogPlacement
 import tech.bashga.plata.designsystem.components.GridItem
+import tech.bashga.plata.designsystem.components.GridItemWidth
 import tech.bashga.plata.designsystem.components.IconCircle
 import tech.bashga.plata.designsystem.components.IconCircleSize
 import tech.bashga.plata.designsystem.components.ListRow
@@ -160,10 +162,14 @@ fun PaymentsScreen(
 // the grid cells sit 12 from the card edges, 8 outside its 20 padding (a5a647ee, b7b04c52)
 private val GridBleed = 8.dp
 private val FavoritesGap = 8.dp
+private const val BillerColumns = 4
+// four 72 cells across the 329 bled card at 393 (a5a647ee)
+private val BillerGap = 13.67.dp
 private val CardHeaderGap = 19.dp
 private val SearchTop = 7.dp
 private val TilesTop = 22.dp
 private val TileIcon = 32.dp
+private val TileGap = 21.dp
 
 // iOS lets a large-title page scroll its title away even when the content is shorter than the screen (0b2e699a)
 private val TitleScrollAway = 52.dp
@@ -214,9 +220,9 @@ fun PaymentsContent(state: PaymentsState, onAction: (PaymentsAction) -> Unit, mo
                 placeholder = "Favorites, bills, providers",
             )
             Spacer(Modifier.height(TilesTop))
-            Row(Modifier.fillMaxWidth().padding(horizontal = spacing.screenMargin), horizontalArrangement = Arrangement.SpaceBetween) {
-                ActionTile("Top-up", PlataIcons.TopUp, iconSize = TileIcon, onClick = { onAction(PaymentsAction.NotBuilt) })
-                ActionTile("Transfer", PlataIcons.Transfer, iconSize = TileIcon, onClick = { onAction(PaymentsAction.TransferTile) })
+            Row(Modifier.fillMaxWidth().padding(horizontal = spacing.screenMargin), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
+                ActionTile("Top-up", PlataIcons.TopUp, Modifier.weight(1f), iconSize = TileIcon, onClick = { onAction(PaymentsAction.NotBuilt) })
+                ActionTile("Transfer", PlataIcons.Transfer, Modifier.weight(1f), iconSize = TileIcon, onClick = { onAction(PaymentsAction.TransferTile) })
             }
             Spacer(Modifier.height(spacing.cardGap))
             Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
@@ -227,9 +233,9 @@ fun PaymentsContent(state: PaymentsState, onAction: (PaymentsAction) -> Unit, mo
                 ) {
                     Row(Modifier.bleed(GridBleed).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(FavoritesGap)) {
                         state.favorites.forEach { favorite ->
-                            GridItem(favorite.name, onClick = { onAction(PaymentsAction.NotBuilt) }) { FavoriteArt(favorite) }
+                            GridItem(favorite.name, Modifier.width(GridItemWidth), onClick = { onAction(PaymentsAction.NotBuilt) }) { FavoriteArt(favorite) }
                         }
-                        GridItem("Add", onClick = { onAction(PaymentsAction.EditFavorites) }) { IconCircle(PlataIcons.Plus, IconCircleSize.S56) }
+                        GridItem("Add", Modifier.width(GridItemWidth), onClick = { onAction(PaymentsAction.EditFavorites) }) { IconCircle(PlataIcons.Plus, IconCircleSize.S56) }
                     }
                 }
                 SectionCard(
@@ -238,11 +244,12 @@ fun PaymentsContent(state: PaymentsState, onAction: (PaymentsAction) -> Unit, mo
                     headerTrailing = { SectionCardAction("Show all", { onAction(PaymentsAction.NotBuilt) }) },
                 ) {
                     Column(Modifier.bleed(GridBleed), verticalArrangement = Arrangement.spacedBy(spacing.s20)) {
-                        Billers.chunked(4).forEach { row ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Billers.chunked(BillerColumns).forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(BillerGap)) {
                                 row.forEach { (label, glyph) ->
-                                    GridItem(label, onClick = { onAction(PaymentsAction.NotBuilt) }) { IconCircle(glyph, IconCircleSize.S56) }
+                                    GridItem(label, Modifier.weight(1f), onClick = { onAction(PaymentsAction.NotBuilt) }) { IconCircle(glyph, IconCircleSize.S56) }
                                 }
+                                repeat(BillerColumns - row.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }

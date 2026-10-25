@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -120,9 +119,9 @@ fun TransactionsScreen(onBack: () -> Unit) {
     TransactionsContent(state, { if (it == TransactionsAction.Back) onBack() else viewModel.onAction(it) })
 }
 
-// 894b1b01: the month 35 under the search field, tiles 170 wide, the MSI row 30 under them, the first day 40 under it
+// 894b1b01: the month 35 under the search field, tiles 13 apart, the MSI row 30 under them, the first day 40 under it
 private val MonthTop = 35.dp
-private val TileWidth = 170.dp
+private val TileGap = 13.dp
 private val CompactGap = 12.5.dp
 private val MsiRowTop = 30.33.dp
 private val GroupsTop = 39.83.dp
@@ -151,20 +150,20 @@ fun TransactionsContent(state: TransactionsState, onAction: (TransactionsAction)
             Spacer(Modifier.height(MonthTop))
             HeadlineBlock(state.period.label, Modifier.padding(horizontal = spacing.screenMargin))
             Spacer(Modifier.height(spacing.s20))
-            Row(Modifier.fillMaxWidth().padding(horizontal = spacing.screenMargin), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = spacing.screenMargin), horizontalArrangement = Arrangement.spacedBy(TileGap)) {
                 ShortcutTile(
                     formatMoney(state.spent),
-                    Modifier.width(TileWidth),
+                    Modifier.weight(1f),
                     size = ShortcutTileSize.Tall,
                     titleTone = ShortcutTitleTone.Primary,
                     subtitle = "Spent",
                     showChevron = true,
                     onClick = {},
                 ) { SpendOrb(if (state.spent > 0) SpendOrbState.Active else SpendOrbState.Empty) }
-                Column(verticalArrangement = Arrangement.spacedBy(CompactGap)) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(CompactGap)) {
                     ShortcutTile(
                         formatMoney(state.received),
-                        Modifier.width(TileWidth),
+                        Modifier.fillMaxWidth(),
                         size = ShortcutTileSize.Compact,
                         titleTone = ShortcutTitleTone.Success,
                         subtitle = "Received",
@@ -173,7 +172,7 @@ fun TransactionsContent(state: TransactionsState, onAction: (TransactionsAction)
                     )
                     ShortcutTile(
                         formatMoney(state.cashback),
-                        Modifier.width(TileWidth),
+                        Modifier.fillMaxWidth(),
                         size = ShortcutTileSize.Compact,
                         subtitle = "Cashback",
                         showChevron = true,

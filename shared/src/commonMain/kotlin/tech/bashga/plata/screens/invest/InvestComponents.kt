@@ -31,6 +31,7 @@ private val AssetRowHeight = 60.dp
 private val AssetHeaderGap = 17.7.dp
 private val AssetCardBottom = 10.dp
 private val TileRowGap = 8.dp
+private val TileColumnGap = 9.5.dp
 
 @Composable
 internal fun AssetLogo(asset: Asset, size: BrandLogoSize) {
@@ -66,12 +67,13 @@ internal fun ListingTileCard(
         }
         Column(verticalArrangement = Arrangement.spacedBy(TileRowGap)) {
             listings.chunked(3).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(TileColumnGap)) {
                     row.forEach { listing ->
-                        StockTile(listing.ticker, listing.quote.changeLabel, listing.quote.direction, onClick = { onListing(listing.ticker) }) {
+                        StockTile(listing.ticker, listing.quote.changeLabel, listing.quote.direction, Modifier.weight(1f), onClick = { onListing(listing.ticker) }) {
                             AssetLogo(listing.asset, BrandLogoSize.S56)
                         }
                     }
+                    repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }

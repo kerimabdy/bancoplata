@@ -16,7 +16,9 @@ import tech.bashga.plata.designsystem.icons.PhoneDuotone
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
-/** 72-wide grid cell: 56 [media] (IconCircle, BrandLogo, CardThumb) over a centred 13pt label, 6 apart (a5a647ee). */
+/** Grid cell as wide as the caller makes it ([GridItemWidth] in a scrolling row): 56 [media] (IconCircle, BrandLogo, CardThumb) over a centred 13pt label, 6 apart (a5a647ee). */
+val GridItemWidth = 72.dp
+
 @Composable
 fun GridItem(
     label: String,
@@ -26,7 +28,6 @@ fun GridItem(
 ) {
     Column(
         modifier
-            .width(72.dp)
             .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -46,5 +47,5 @@ fun GridItem(
 @Preview
 @Composable
 internal fun GridItemPreview() = PlataTheme {
-    GridItem("Mobile") { IconCircle(PlataIcons.PhoneDuotone, IconCircleSize.S56) }
+    GridItem("Mobile", Modifier.width(GridItemWidth)) { IconCircle(PlataIcons.PhoneDuotone, IconCircleSize.S56) }
 }

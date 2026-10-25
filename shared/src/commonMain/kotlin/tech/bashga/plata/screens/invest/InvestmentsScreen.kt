@@ -324,12 +324,13 @@ private fun InvestmentsFeed(state: InvestmentsState, onAction: (InvestmentsActio
         bodySpacing = StockRowGap,
     ) {
         state.popular.chunked(3).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(StockColumnGap)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(StockColumnGap)) {
                 row.forEach { listing ->
-                    StockTile(listing.ticker, listing.quote.changeLabel, listing.quote.direction, onClick = { openStock(listing.ticker) }) {
+                    StockTile(listing.ticker, listing.quote.changeLabel, listing.quote.direction, Modifier.weight(1f), onClick = { openStock(listing.ticker) }) {
                         AssetLogo(listing.asset, BrandLogoSize.S56)
                     }
                 }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
     }
