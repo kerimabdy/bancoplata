@@ -36,7 +36,6 @@ import org.jetbrains.compose.resources.painterResource
 import plata.shared.generated.resources.Res
 import plata.shared.generated.resources.raster_ambassador_assigned
 import plata.shared.generated.resources.raster_badge_package
-import plata.shared.generated.resources.raster_map_preview
 import tech.bashga.plata.data.Ambassador
 import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.data.AppSnapshot
@@ -75,6 +74,7 @@ data class DeliveryDetailsState(
     val ambassador: Ambassador = Ambassador.Unassigned,
     val address: String = "",
     val addressLine2: String = "",
+    val location: Pair<Double, Double>? = null,
     val details: String = "",
     val time: String = "",
 ) {
@@ -103,6 +103,7 @@ internal fun AppSnapshot.toDeliveryDetailsState(): DeliveryDetailsState {
         ambassador = (stage as? Stage.CardComing)?.ambassador ?: Ambassador.Unassigned,
         address = address?.line.orEmpty(),
         addressLine2 = address?.place?.line2.orEmpty(),
+        location = address?.place?.let { it.latitude to it.longitude },
         details = delivery.details,
         time = deliveryWhen.orEmpty(),
     )
@@ -255,8 +256,10 @@ private fun DeliveryCards(state: DeliveryDetailsState, onAction: (DeliveryDetail
         headerGap = AddressHeaderGap,
     ) {
         PlataText(listOf(state.address, state.addressLine2).filter { it.isNotEmpty() }.joinToString("\n"), typography.bodyCompact, colors.textPrimary)
-        Spacer(Modifier.height(AddressToMap))
-        MapPreview(painterResource(Res.drawable.raster_map_preview), contentDescription = "Map")
+        state.location?.let { (latitude, longitude) ->
+            Spacer(Modifier.height(AddressToMap))
+            MapPreview(latitude, longitude)
+        }
     }
     SummaryCard(
         "Date and time",

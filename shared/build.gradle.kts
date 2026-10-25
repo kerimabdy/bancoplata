@@ -40,6 +40,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.compose.uiTooling)
+            implementation(libs.osmdroid.android)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

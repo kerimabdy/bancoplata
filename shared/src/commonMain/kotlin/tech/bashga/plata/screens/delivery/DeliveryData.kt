@@ -18,19 +18,19 @@ internal const val CustomerName = "Sofía"
 internal const val CardLastDigits = "4821"
 
 /** One place the fake geocoder knows: [line2] is the borough and post code DeliveryDetails prints under the street. */
-internal data class Place(val address: Address, val city: String, val line2: String)
+internal data class Place(val address: Address, val city: String, val line2: String, val latitude: Double, val longitude: Double)
 
 private val places = listOf(
-    Place(Address("Av. Río Mixcoac 25", "Actipan"), "Ciudad de México", "Benito Juárez, 03230 CDMX"),
-    Place(Address("Av. Río Churubusco 1050", "Iztacalco"), "Ciudad de México", "Iztacalco, 08400 CDMX"),
-    Place(Address("Av. Río San Joaquín 498", "Granada"), "Ciudad de México", "Miguel Hidalgo, 11520 CDMX"),
-    Place(Address("Av. Río Consulado 800", "Peralvillo"), "Ciudad de México", "Cuauhtémoc, 06220 CDMX"),
-    Place(Address("Av. Río Hondo 12", "Tecamachalco"), "Naucalpan, Edo. Méx.", "Naucalpan, 53950 Edo. Méx."),
-    Place(Address("Calle Durango 263", "Roma Norte"), "Ciudad de México", "Cuauhtémoc, 06700 CDMX"),
-    Place(Address("Durango 263", "Colonia Roma"), "Ciudad de México", "Cuauhtémoc, 06700 CDMX"),
-    Place(Address("Durango 263", "Lomas Altas"), "Ciudad de México", "Miguel Hidalgo, 11950 CDMX"),
-    Place(Address("Durango 263", "Del Valle"), "Ciudad de México", "Benito Juárez, 03100 CDMX"),
-    Place(Address("Durango 263", "San Mateo"), "Naucalpan, Edo. Méx.", "Naucalpan, 53200 Edo. Méx."),
+    Place(Address("Av. Río Mixcoac 25", "Actipan"), "Ciudad de México", "Benito Juárez, 03230 CDMX", 19.3727, -99.1795),
+    Place(Address("Av. Río Churubusco 1050", "Iztacalco"), "Ciudad de México", "Iztacalco, 08400 CDMX", 19.3895, -99.1062),
+    Place(Address("Av. Río San Joaquín 498", "Granada"), "Ciudad de México", "Miguel Hidalgo, 11520 CDMX", 19.4405, -99.1885),
+    Place(Address("Av. Río Consulado 800", "Peralvillo"), "Ciudad de México", "Cuauhtémoc, 06220 CDMX", 19.4592, -99.1318),
+    Place(Address("Av. Río Hondo 12", "Tecamachalco"), "Naucalpan, Edo. Méx.", "Naucalpan, 53950 Edo. Méx.", 19.4178, -99.2352),
+    Place(Address("Calle Durango 263", "Roma Norte"), "Ciudad de México", "Cuauhtémoc, 06700 CDMX", 19.4205, -99.1665),
+    Place(Address("Durango 263", "Colonia Roma"), "Ciudad de México", "Cuauhtémoc, 06700 CDMX", 19.4205, -99.1665),
+    Place(Address("Durango 263", "Lomas Altas"), "Ciudad de México", "Miguel Hidalgo, 11950 CDMX", 19.4060, -99.2395),
+    Place(Address("Durango 263", "Del Valle"), "Ciudad de México", "Benito Juárez, 03100 CDMX", 19.3872, -99.1658),
+    Place(Address("Durango 263", "San Mateo"), "Naucalpan, Edo. Méx.", "Naucalpan, 53200 Edo. Méx.", 19.4728, -99.2448),
 )
 
 private fun String.searchTokens(): List<String> = lowercase()

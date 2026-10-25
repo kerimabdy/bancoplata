@@ -1,6 +1,5 @@
 package tech.bashga.plata.screens.delivery
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -30,10 +30,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.jetbrains.compose.resources.painterResource
-import plata.shared.generated.resources.Res
-import plata.shared.generated.resources.raster_map_delivery
-import plata.shared.generated.resources.raster_map_delivery_top
 import tech.bashga.plata.data.Address
 import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.data.LocalAppRepository
@@ -45,6 +41,7 @@ import tech.bashga.plata.designsystem.components.IconSize
 import tech.bashga.plata.designsystem.components.ListRow
 import tech.bashga.plata.designsystem.components.NavigationBar
 import tech.bashga.plata.designsystem.components.NavigationBarStyle
+import tech.bashga.plata.designsystem.components.PlataMap
 import tech.bashga.plata.designsystem.components.TextButton
 import tech.bashga.plata.designsystem.components.TextField
 import tech.bashga.plata.designsystem.components.TextFieldClearButton
@@ -199,18 +196,21 @@ private fun DeliveryAddressMap(state: DeliveryAddressState, onAction: (DeliveryA
     var detailsFocused by remember { mutableStateOf(false) }
     val keyboard = keyboardHeight(detailsFocused)
     val safeArea = PlataSafeArea.current
+    val density = LocalDensity.current
+    var sheetHeight by remember { mutableStateOf(0.dp) }
     Box(modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) {
-        Image(
-            painterResource(if (keyboard > 0.dp) Res.drawable.raster_map_delivery_top else Res.drawable.raster_map_delivery),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.FillWidth,
-            alignment = Alignment.TopCenter,
-        )
+        state.address?.place?.let { place ->
+            PlataMap(
+                place.latitude,
+                place.longitude,
+                // tucked under the sheet's rounded top so the corners show map, not background
+                Modifier.fillMaxSize().padding(bottom = (sheetHeight - PlataTheme.radii.sheet).coerceAtLeast(0.dp)),
+            )
+        }
         // above the keyboard the sheet's bottom inset is the keyboard, not the home indicator
         ProvideSafeArea(safeArea.copy(bottom = if (keyboard > 0.dp) keyboard else safeArea.bottom)) {
             BottomSheet(
-                Modifier.align(Alignment.BottomCenter),
+                Modifier.align(Alignment.BottomCenter).onSizeChanged { sheetHeight = with(density) { it.height.toDp() } },
                 title = "Delivery address",
                 align = BottomSheetAlign.Center,
                 contentSpacing = PlataTheme.spacing.s20,
