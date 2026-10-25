@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.pressScale
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.icons.Msi
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -100,9 +101,10 @@ fun Button(
     Row(
         modifier
             .alpha(if (enabled) 1f else 0.3f)
+            .pressScale(enabled = enabled && !loading)
+            .pressable(enabled = enabled && !loading, indication = null, onClick = onClick)
             .height(metrics.height)
             .background(fill, shape)
-            .pressable(enabled = enabled && !loading, onClick = onClick)
             .semantics { if (loading) contentDescription = label }
             .padding(contentPadding ?: PaddingValues(start = if (showIcon) metrics.startWithIcon else metrics.start, end = metrics.end)),
         horizontalArrangement = Arrangement.spacedBy(metrics.gap, Alignment.CenterHorizontally),
