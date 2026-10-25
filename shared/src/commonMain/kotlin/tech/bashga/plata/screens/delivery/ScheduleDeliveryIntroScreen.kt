@@ -1,6 +1,7 @@
 package tech.bashga.plata.screens.delivery
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,8 +38,8 @@ fun ScheduleDeliveryIntroContent(onAction: (ScheduleDeliveryIntroAction) -> Unit
             Image(
                 painterResource(Res.drawable.raster_onboarding_delivery),
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
                 alignment = Alignment.TopCenter,
             )
         },
