@@ -42,6 +42,7 @@ import tech.bashga.plata.designsystem.components.TextButtonTone
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 internal const val SupportPhone = "+52 55 9990 8880"
@@ -91,7 +92,7 @@ fun CardPackagingContent(onAction: (CardPackagingAction) -> Unit, modifier: Modi
     }
     Box(modifier.fillMaxSize().background(colors.surfaceSheetDark)) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(scroll).testTag("packaging-scroll"),
+            Modifier.fillMaxSize().backdropSource().verticalScroll(scroll).testTag("packaging-scroll"),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(HeroTop))

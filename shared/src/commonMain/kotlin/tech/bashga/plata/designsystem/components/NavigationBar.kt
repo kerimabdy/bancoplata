@@ -1,5 +1,6 @@
 package tech.bashga.plata.designsystem.components
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,17 +13,16 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropBlur
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.icons.ChevronBack
 import tech.bashga.plata.designsystem.icons.ChevronLeftHeavy
@@ -76,8 +77,8 @@ private val TwoLineOverlap = (-2).dp
  * a TextButton ("Close", "By VestFi ⓘ").
  * [material] is the translucent scroll-edge fill; with [includeStatusBar] the bar adds the status-bar band above itself
  * (safe-area top minus 5), so the material runs up to the screen edge and the bar row lands at y 54 on an iPhone.
- * [divider] is the one-pixel hairline under the bar (537a4b5a). The source blurs what scrolls under the material;
- * Compose has no backdrop blur, so the material is the translucent fill only.
+ * [divider] is the one-pixel hairline under the bar (537a4b5a). The material blurs what scrolls under it when the
+ * screen tags its content with `backdropSource`, and is the translucent fill alone otherwise.
  * [collapsed] is the scrolled state: a [NavigationBarStyle.Large] bar drops its large-title row and centres [title]
  * inline, and every style takes the material. Derive it with [rememberCollapsed].
  */
@@ -113,7 +114,7 @@ fun NavigationBar(
     Column(
         modifier
             .fillMaxWidth()
-            .then(if (filled) Modifier.background(colors.surfaceNavMaterial) else Modifier)
+            .then(if (filled) Modifier.backdropBlur(colors.surfaceNavMaterialFrost, fallback = colors.surfaceNavMaterial) else Modifier)
             .then(
                 if (divider) {
                     Modifier.drawBehind {

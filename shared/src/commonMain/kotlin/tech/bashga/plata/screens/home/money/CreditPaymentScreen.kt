@@ -57,6 +57,7 @@ import tech.bashga.plata.designsystem.components.SectionCardAmount
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
@@ -120,6 +121,7 @@ fun CreditPaymentContent(state: CreditPaymentState, onAction: (CreditPaymentActi
             Modifier
                 .fillMaxSize()
                 .testTag("credit-payment")
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = safeArea.top - spacing.s4 + PlataTheme.sizes.nav, bottom = safeArea.bottom + spacing.s20),
         ) {

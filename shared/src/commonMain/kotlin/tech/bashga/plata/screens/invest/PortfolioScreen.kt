@@ -65,6 +65,7 @@ import tech.bashga.plata.designsystem.components.TrendDirection
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.ArrowUpRightDuotone
 import tech.bashga.plata.designsystem.icons.DoubleChevronDuotone
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -216,6 +217,7 @@ fun PortfolioContent(state: PortfolioState, onAction: (PortfolioAction) -> Unit,
             Modifier
                 .fillMaxSize()
                 .testTag("portfolio-scroll")
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = safeArea.top + HeaderTop),
         ) {

@@ -73,6 +73,8 @@ import tech.bashga.plata.designsystem.components.TextButtonWeight
 import tech.bashga.plata.designsystem.components.ToastHost
 import tech.bashga.plata.designsystem.components.ToastTone
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropBlur
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -221,7 +223,7 @@ fun InvestmentsContent(state: InvestmentsState, onAction: (InvestmentsAction) ->
     val collapsePx = with(LocalDensity.current) { CollapseDistance.toPx() }
     val collapsed by remember(scroll, collapsePx) { derivedStateOf { scroll.value >= collapsePx } }
     Box(modifier.fillMaxSize().background(colors.surfaceBackground)) {
-        Column(Modifier.fillMaxSize().testTag("investments-scroll").verticalScroll(scroll)) {
+        Column(Modifier.fillMaxSize().testTag("investments-scroll").backdropSource().verticalScroll(scroll)) {
             NavigationBar(
                 style = NavigationBarStyle.Large,
                 title = "Investments",
@@ -237,7 +239,7 @@ fun InvestmentsContent(state: InvestmentsState, onAction: (InvestmentsAction) ->
             Spacer(Modifier.height(safeBottom + spacing.cardGap))
         }
         if (collapsed) {
-            Column(Modifier.fillMaxWidth().background(colors.surfaceNavMaterial)) {
+            Column(Modifier.fillMaxWidth().backdropBlur(colors.surfaceNavMaterialFrost, fallback = colors.surfaceNavMaterial)) {
                 NavigationBar(
                     title = "Investments",
                     trailing = { VestFiCredit { onAction(InvestmentsAction.ShowVestFiInfo) } },

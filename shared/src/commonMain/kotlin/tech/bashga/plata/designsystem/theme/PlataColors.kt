@@ -52,8 +52,10 @@ data class PlataColors(
     val borderSubtle: Color = PlataPalette.BorderSubtle,
     /** TabBar material without the blur; pair with a background blur of 30 where the platform allows it. */
     val surfaceTabbar: Color = PlataPalette.SurfaceBackground.copy(alpha = 0.9f),
-    /** NavigationBar material (scroll edge): reads #F8F8FA–#FAFAFB over the page (baff34c6, d58c1486, b50f7634); no backdrop blur. */
+    /** NavigationBar material (scroll edge) where nothing is blurred: reads #F8F8FA–#FAFAFB over the page (baff34c6, d58c1486, b50f7634). */
     val surfaceNavMaterial: Color = PlataPalette.SurfaceNavMaterial.copy(alpha = 0.85f),
+    /** The same material over a backdrop blur, thinner so the frosted content reads through. */
+    val surfaceNavMaterialFrost: Color = PlataPalette.SurfaceNavMaterial.copy(alpha = 0.7f),
     /** NavigationBar bottom hairline (537a4b5a): one device pixel. */
     val navSeparator: Color = PlataPalette.NavSeparator,
     val scrim: Color = PlataPalette.Black.copy(alpha = 0.5f),

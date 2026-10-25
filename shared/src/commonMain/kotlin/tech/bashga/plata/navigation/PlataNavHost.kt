@@ -22,9 +22,9 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -44,13 +44,14 @@ import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import kotlinx.coroutines.launch
 import kotlin.time.TimeSource
+import kotlinx.coroutines.launch
 import tech.bashga.plata.designsystem.components.PageSheetBackdrop
 import tech.bashga.plata.designsystem.components.PageSheetSurface
 import tech.bashga.plata.designsystem.components.PageSheetTop
 import tech.bashga.plata.designsystem.components.SheetPresenter
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
+import tech.bashga.plata.designsystem.foundation.ProvideBackdrop
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /** A run of back-stack entries drawn together: the base screen, or a sheet or cover with what was pushed inside it. */
@@ -312,13 +313,15 @@ internal fun LayerFrame(
     ) {
         SheetPresenter(stacked, dimmed, cardTop = cardTop) {
             OverlayHost(cardTop = cardTop) {
-                when (presentation) {
-                    Presentation.Push -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { baseFrame(content) }
-                    Presentation.Sheet -> {
-                        val dispatchBack = rememberDispatchBack()
-                        PageSheetSurface(Modifier.swipeToDismiss(dispatchBack, onSheetDrag)) { content() }
+                ProvideBackdrop {
+                    when (presentation) {
+                        Presentation.Push -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { baseFrame(content) }
+                        Presentation.Sheet -> {
+                            val dispatchBack = rememberDispatchBack()
+                            PageSheetSurface(Modifier.swipeToDismiss(dispatchBack, onSheetDrag)) { content() }
+                        }
+                        Presentation.Cover -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { content() }
                     }
-                    Presentation.Cover -> Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) { content() }
                 }
             }
         }
@@ -411,7 +414,7 @@ private fun LayerContent(
                         .then(if (isFront) Modifier.pushFront(pose, look) else if (isBehind) Modifier.pushBehind(pose, look) else Modifier)
                         .background(PlataTheme.colors.surfaceBackground),
                 ) {
-                    entryContent(entry, isTopLayer && entry == layer.top && entry == front)
+                    ProvideBackdrop { entryContent(entry, isTopLayer && entry == layer.top && entry == front) }
                 }
             }
         }

@@ -42,6 +42,7 @@ import tech.bashga.plata.designsystem.components.SummaryCardTrailingAlignment
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.MsiBadge
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -111,6 +112,7 @@ fun MsiHomeContent(state: MsiHomeState, onAction: (MsiHomeAction) -> Unit, modif
             Modifier
                 .fillMaxSize()
                 .testTag("msi-home")
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = safeArea.top - StatusBarOverlap + PlataTheme.sizes.nav + HeadlineTop, bottom = safeArea.bottom + FeedBottom),
         ) {

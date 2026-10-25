@@ -90,6 +90,7 @@ import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.icons.ShieldHalf
@@ -237,6 +238,7 @@ fun ProfileContent(state: ProfileState, onAction: (ProfileAction) -> Unit, modif
             Modifier
                 .fillMaxSize()
                 .testTag("profile-scroll")
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = PlataSafeArea.current.top + HeaderTop, bottom = PlataSafeArea.current.bottom + spacing.s20)
                 .padding(horizontal = spacing.screenMargin),

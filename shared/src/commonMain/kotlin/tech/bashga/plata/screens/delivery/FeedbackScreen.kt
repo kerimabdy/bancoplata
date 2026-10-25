@@ -51,6 +51,7 @@ import tech.bashga.plata.designsystem.components.TextFieldClearButton
 import tech.bashga.plata.designsystem.components.TextFieldSurface
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.navigation.PlataBackHandler
 
@@ -151,6 +152,7 @@ fun FeedbackContent(state: FeedbackState, onAction: (FeedbackAction) -> Unit, mo
             Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { viewportBottom = it.boundsInRoot().bottom }
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = PlataTheme.sizes.navSheet, start = spacing.screenMargin, end = spacing.screenMargin),
         ) {

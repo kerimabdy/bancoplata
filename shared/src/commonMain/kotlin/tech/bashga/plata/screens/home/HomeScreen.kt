@@ -49,8 +49,6 @@ import tech.bashga.plata.data.Month
 import tech.bashga.plata.data.Stage
 import tech.bashga.plata.data.creditAvailable
 import tech.bashga.plata.data.formatMoney
-import tech.bashga.plata.screens.home.money.creditStatus
-import tech.bashga.plata.screens.home.money.homeLabel
 import tech.bashga.plata.data.inviteOffer
 import tech.bashga.plata.data.spent
 import tech.bashga.plata.designsystem.components.Avatar as AvatarImage
@@ -83,6 +81,7 @@ import tech.bashga.plata.designsystem.components.SummaryCard
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.icons.CalendarGrid
 import tech.bashga.plata.designsystem.icons.Msi
@@ -90,6 +89,8 @@ import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.navigation.LocalIsTopEntry
 import tech.bashga.plata.navigation.Overlay
+import tech.bashga.plata.screens.home.money.creditStatus
+import tech.bashga.plata.screens.home.money.homeLabel
 
 sealed interface HomeStage {
     /** The pre-shell delivery feed: arriving on [date] at [address]. */
@@ -247,7 +248,7 @@ fun HomeContent(state: HomeState, onAction: (HomeAction) -> Unit, modifier: Modi
     val collapsed = rememberCollapsed(scroll, CollapseAfter)
     val safeArea = PlataSafeArea.current
     Box(modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) {
-        Column(Modifier.fillMaxSize().testTag("home-scroll").verticalScroll(scroll)) {
+        Column(Modifier.fillMaxSize().testTag("home-scroll").backdropSource().verticalScroll(scroll)) {
             when (val stage = state.stage) {
                 is HomeStage.CardComing -> CardComingFeed(stage, onAction)
                 HomeStage.Live -> LiveFeed(state, onAction)

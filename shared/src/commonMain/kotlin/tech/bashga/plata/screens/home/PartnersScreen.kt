@@ -51,7 +51,6 @@ import plata.shared.generated.resources.raster_logo_nike
 import plata.shared.generated.resources.raster_media_booking
 import plata.shared.generated.resources.raster_media_partners
 import tech.bashga.plata.designsystem.components.BrandLogo
-import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.components.BrandLogoSize
 import tech.bashga.plata.designsystem.components.Chip
 import tech.bashga.plata.designsystem.components.MediaHeader
@@ -60,6 +59,8 @@ import tech.bashga.plata.designsystem.components.NavigationBarStyle
 import tech.bashga.plata.designsystem.components.PartnerCard
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.Beauty
 import tech.bashga.plata.designsystem.icons.CarRental
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -201,7 +202,7 @@ fun PartnerDirectoryContent(
     val spacing = PlataTheme.spacing
     val collapsed = rememberCollapsed(scroll, collapseAfter)
     Box(modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) {
-        Column(Modifier.fillMaxSize().testTag("directory-scroll").verticalScroll(scroll)) {
+        Column(Modifier.fillMaxSize().testTag("directory-scroll").backdropSource().verticalScroll(scroll)) {
             header()
             Spacer(Modifier.height(spacing.s20))
             Row(

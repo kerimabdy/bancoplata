@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -54,12 +56,11 @@ import tech.bashga.plata.designsystem.components.SectionHeaderEmphasis
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.Coins
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.icons.ShieldHalf
 import tech.bashga.plata.designsystem.theme.PlataTheme
-import kotlin.math.roundToInt
-import kotlin.math.roundToLong
 
 /** PortfolioAllocation: everything at cost (USD 2.00 where Portfolio shows the market value 2.01). */
 @Immutable
@@ -143,6 +144,7 @@ fun PortfolioAllocationContent(state: PortfolioAllocationState, onAction: (Portf
             Modifier
                 .fillMaxSize()
                 .testTag("allocation-scroll")
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = PlataSafeArea.current.top + HeaderBelowSafeArea),
         ) {

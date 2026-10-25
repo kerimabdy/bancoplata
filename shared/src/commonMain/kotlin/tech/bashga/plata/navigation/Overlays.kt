@@ -60,6 +60,7 @@ import tech.bashga.plata.designsystem.components.ModalMotion
 import tech.bashga.plata.designsystem.components.PageSheetBackdrop
 import tech.bashga.plata.designsystem.components.PageSheetSurface
 import tech.bashga.plata.designsystem.components.SheetPresenter
+import tech.bashga.plata.designsystem.foundation.ProvideBackdrop
 
 internal const val PresentMillis = 350
 
@@ -213,7 +214,7 @@ private fun <T : Any> RegisterOverlay(value: T?, kind: OverlayKind, onDismiss: (
     request.kind = kind
     request.visible = value != null
     request.onDismiss = onDismiss
-    request.content = { if (shown != null) latestContent(shown) }
+    request.content = { if (shown != null) ProvideBackdrop { latestContent(shown) } }
     // Added after composition: a write inside the host's first composition never invalidates the host's read.
     DisposableEffect(request) {
         host.requests += request

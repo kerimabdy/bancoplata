@@ -54,6 +54,7 @@ import tech.bashga.plata.designsystem.components.TextField
 import tech.bashga.plata.designsystem.components.TextFieldClearButton
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.navigation.Overlay
@@ -227,6 +228,7 @@ fun TransferRecipientContent(
         Column(
             Modifier
                 .fillMaxSize()
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = PlataTheme.sizes.navSheet + FormTop, start = spacing.screenMargin, end = spacing.screenMargin),
             verticalArrangement = Arrangement.spacedBy(spacing.s20),

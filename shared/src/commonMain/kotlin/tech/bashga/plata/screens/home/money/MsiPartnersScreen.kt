@@ -43,7 +43,6 @@ import plata.shared.generated.resources.raster_logo_fiserv
 import plata.shared.generated.resources.raster_logo_mercadopago
 import plata.shared.generated.resources.raster_media_msi_partners
 import tech.bashga.plata.data.AppRepository
-import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.data.LocalAppRepository
 import tech.bashga.plata.data.formatMoney
 import tech.bashga.plata.designsystem.components.BrandLogo
@@ -63,6 +62,8 @@ import tech.bashga.plata.designsystem.components.PartnerCardTrailing
 import tech.bashga.plata.designsystem.components.SectionHeader
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.Beauty
 import tech.bashga.plata.designsystem.icons.CarRental
 import tech.bashga.plata.designsystem.icons.Globe
@@ -171,7 +172,7 @@ fun MsiPartnersContent(state: MsiPartnersState, onAction: (MsiPartnersAction) ->
     val pager = rememberPagerState { state.hero.size }
     val chipRow = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = spacing.screenMargin)
     Box(modifier.fillMaxSize().background(colors.surfaceBackground)) {
-        Column(Modifier.fillMaxSize().testTag("msi-partners").verticalScroll(scroll).padding(bottom = safeArea.bottom + FeedBottom)) {
+        Column(Modifier.fillMaxSize().testTag("msi-partners").backdropSource().verticalScroll(scroll).padding(bottom = safeArea.bottom + FeedBottom)) {
             MediaHeader(
                 pager,
                 title = { "The best is yet to come" },

@@ -58,6 +58,7 @@ import tech.bashga.plata.designsystem.components.SpendOrb
 import tech.bashga.plata.designsystem.components.SpendOrbState
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.HouseDollar
 import tech.bashga.plata.designsystem.icons.MsiBadge
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -138,6 +139,7 @@ fun TransactionsContent(state: TransactionsState, onAction: (TransactionsAction)
             Modifier
                 .fillMaxSize()
                 .testTag("transactions")
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = safeArea.top - spacing.s4 + PlataTheme.sizes.nav, bottom = safeArea.bottom + FeedBottom),
         ) {

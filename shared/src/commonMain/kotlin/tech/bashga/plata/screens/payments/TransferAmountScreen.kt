@@ -47,6 +47,7 @@ import tech.bashga.plata.designsystem.components.TextButton
 import tech.bashga.plata.designsystem.components.Toggle
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.InfoFill
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -159,6 +160,7 @@ fun TransferAmountContent(
         Column(
             Modifier
                 .fillMaxSize()
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = PlataTheme.sizes.navSheet + FormTop, start = spacing.screenMargin, end = spacing.screenMargin),
             verticalArrangement = Arrangement.spacedBy(spacing.s20),

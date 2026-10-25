@@ -65,6 +65,7 @@ import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.icons.HeartFill
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -136,7 +137,7 @@ fun ReferFriendContent(state: ReferFriendState, onAction: (ReferFriendAction) ->
     val collapsed = rememberCollapsed(scroll, CollapseAfter)
     val limited = state.offer == InviteOffer.Limited
     Box(modifier.fillMaxSize().background(colors.surfaceBackground)) {
-        Column(Modifier.fillMaxSize().testTag("refer-scroll").verticalScroll(scroll), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxSize().testTag("refer-scroll").backdropSource().verticalScroll(scroll), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(PlataTheme.sizes.navSheet))
             if (limited) LimitedHero() else StandardHero()
             Spacer(Modifier.height(CardsTop))

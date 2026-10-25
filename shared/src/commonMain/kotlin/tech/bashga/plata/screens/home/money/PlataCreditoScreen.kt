@@ -56,6 +56,7 @@ import tech.bashga.plata.designsystem.components.TextField
 import tech.bashga.plata.designsystem.components.TextFieldSurface
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.BillPay
 import tech.bashga.plata.designsystem.icons.Msi
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -131,6 +132,7 @@ fun PlataCreditoContent(state: PlataCreditoState, onAction: (PlataCreditoAction)
         Column(
             Modifier
                 .fillMaxSize()
+                .backdropSource()
                 .verticalScroll(scroll)
                 .padding(top = safeArea.top - StatusBarOverlap + PlataTheme.sizes.nav, bottom = safeArea.bottom + spacing.s20),
         ) {

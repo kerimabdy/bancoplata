@@ -63,6 +63,7 @@ import tech.bashga.plata.designsystem.components.TextButton
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.CalendarGrid
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -177,7 +178,7 @@ fun DeliveryDetailsContent(state: DeliveryDetailsState, onAction: (DeliveryDetai
     val collapsed = rememberCollapsed(scroll, CollapseAt)
     Box(modifier.fillMaxSize().background(colors.surfaceBackground)) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(scroll).testTag("details-scroll"),
+            Modifier.fillMaxSize().backdropSource().verticalScroll(scroll).testTag("details-scroll"),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.height(SheetToAvatar))

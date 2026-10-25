@@ -40,6 +40,7 @@ import tech.bashga.plata.designsystem.components.TextButton
 import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.ChatStar
 import tech.bashga.plata.designsystem.icons.Crown
 import tech.bashga.plata.designsystem.icons.DiamondPlus
@@ -145,7 +146,7 @@ fun PlataPlusContent(onAction: (PlataPlusAction) -> Unit, modifier: Modifier = M
     val scroll = rememberScrollState()
     val collapsed = rememberCollapsed(scroll, CollapseAfter)
     Box(modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) {
-        Column(Modifier.fillMaxSize().testTag("plata-plus-scroll").verticalScroll(scroll)) {
+        Column(Modifier.fillMaxSize().testTag("plata-plus-scroll").backdropSource().verticalScroll(scroll)) {
             Box {
                 Image(
                     painterResource(Res.drawable.raster_plata_plus_hero),
