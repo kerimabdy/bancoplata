@@ -1,5 +1,7 @@
 package tech.bashga.plata.designsystem.components
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +29,10 @@ sealed interface CardOverviewBody {
     /** [loading] spins the button while the details face shows its empty wells (7464b63b). */
     data class DigitalReveal(val loading: Boolean = false) : CardOverviewBody
 }
+
+private enum class OverviewHeader { Limit, Plain, Frozen, Cancelled }
+
+private const val HeaderFadeMillis = 350
 
 private val HeaderToCard = 47.dp
 private val HintToButton = 48.dp
@@ -94,23 +100,34 @@ fun CardOverview(
     cardNumber: String? = null,
     expires: String? = null,
     cvc: String? = null,
+    cancelled: Boolean = false,
+    number: String = "••••",
 ) {
     val spacing = PlataTheme.spacing
     Column(modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         val headerModifier = Modifier.fillMaxWidth().padding(horizontal = spacing.s40)
-        when {
-            frozen -> BalanceHeader("Frozen", headerModifier, size = BalanceHeaderSize.Status, caption = "Charges can’t be made to your card")
-            body is CardOverviewBody.DigitalReveal -> BalanceHeader(amount, headerModifier, size = BalanceHeaderSize.Medium, caption = caption)
-            else -> BalanceHeader(
-                amount,
-                headerModifier,
-                size = BalanceHeaderSize.Medium,
-                caption = caption,
-                trailing = { TextButton("Set limit", onSetLimit, weight = TextButtonWeight.Semibold, size = TextButtonSize.Subhead) },
-            )
+        val header = when {
+            cancelled -> OverviewHeader.Cancelled
+            frozen -> OverviewHeader.Frozen
+            body is CardOverviewBody.DigitalReveal -> OverviewHeader.Plain
+            else -> OverviewHeader.Limit
+        }
+        Crossfade(header, animationSpec = tween(HeaderFadeMillis), label = "header") { shown ->
+            when (shown) {
+                OverviewHeader.Cancelled -> BalanceHeader("Cancelled", headerModifier, size = BalanceHeaderSize.Medium, caption = "No operations can be performed")
+                OverviewHeader.Frozen -> BalanceHeader("Frozen", headerModifier, size = BalanceHeaderSize.Status, caption = "Charges can’t be made to your card")
+                OverviewHeader.Plain -> BalanceHeader(amount, headerModifier, size = BalanceHeaderSize.Medium, caption = caption)
+                OverviewHeader.Limit -> BalanceHeader(
+                    amount,
+                    headerModifier,
+                    size = BalanceHeaderSize.Medium,
+                    caption = caption,
+                    trailing = { TextButton("Set limit", onSetLimit, weight = TextButtonWeight.Semibold, size = TextButtonSize.Subhead) },
+                )
+            }
         }
         Spacer(Modifier.height(HeaderToCard))
-        CardArt(product, face = face, frozen = frozen, cardNumber = cardNumber, expires = expires, cvc = cvc, onClick = onCardClick)
+        CardArt(product, face = face, frozen = frozen, cardNumber = cardNumber, expires = expires, cvc = cvc, onClick = onCardClick, cancelled = cancelled, number = number)
         when (body) {
             CardOverviewBody.Actions -> {
                 Spacer(Modifier.height(spacing.s24))
@@ -120,10 +137,13 @@ fun CardOverview(
                     Button("Add to Apple Wallet", onAddToWallet, Modifier.fillMaxWidth(), style = ButtonStyle.Black, icon = PlataIcons.Wallet)
                     Row(horizontalArrangement = Arrangement.spacedBy(spacing.s20)) {
                         val tile = Modifier.weight(1f)
-                        if (frozen) {
-                            ActionTile("Unfreeze", PlataIcons.Unfreeze, tile, layout = ActionTileLayout.Third, onClick = onFreeze)
-                        } else {
-                            ActionTile("Freeze", PlataIcons.Snowflake, tile, layout = ActionTileLayout.Third, onClick = onFreeze)
+                        Crossfade(frozen, tile, animationSpec = tween(HeaderFadeMillis), label = "freeze tile") { isFrozen ->
+                            // fillMaxWidth keeps the weighted cell width, which a Crossfade box would otherwise relax to 104
+                            if (isFrozen) {
+                                ActionTile("Unfreeze", PlataIcons.Unfreeze, Modifier.fillMaxWidth(), layout = ActionTileLayout.Third, onClick = onFreeze)
+                            } else {
+                                ActionTile("Freeze", PlataIcons.Snowflake, Modifier.fillMaxWidth(), layout = ActionTileLayout.Third, onClick = onFreeze)
+                            }
                         }
                         ActionTile("Reissue", PlataIcons.Refresh, tile, layout = ActionTileLayout.Third, onClick = onReissue)
                         ActionTile("Discard", PlataIcons.Discard, tile, layout = ActionTileLayout.Third, onClick = onDiscard)

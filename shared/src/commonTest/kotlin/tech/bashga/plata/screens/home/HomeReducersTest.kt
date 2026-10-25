@@ -79,4 +79,25 @@ class HomeReducersTest {
         assertEquals(PartnerFilter.CarRental, chosen.category)
         assertNull(chosen.reduce(PartnersAction.ToggleCategory(PartnerFilter.CarRental)).category)
     }
+
+    @Test
+    fun reissueConfirmsThenTakesTheNewDigits() {
+        val confirm = CardDetailsState(CardId.Physical).reduce(CardDetailsAction.Reissue)
+        assertEquals(CardDetailsOverlay.ReissueConfirm, confirm.overlay)
+        val reissued = confirm.reduce(CardDetailsAction.Reissued("9984"))
+        assertEquals("9984", reissued.number)
+        assertNull(reissued.overlay)
+    }
+
+    @Test
+    fun discardCancelsTheCardAndLocksItsActions() {
+        val confirm = CardDetailsState(CardId.Physical, frozen = true, face = CardFace.Details).reduce(CardDetailsAction.Discard)
+        assertEquals(CardDetailsOverlay.DiscardConfirm, confirm.overlay)
+        val cancelled = confirm.reduce(CardDetailsAction.ConfirmDiscard)
+        assertEquals(true, cancelled.cancelled)
+        assertEquals(false, cancelled.frozen)
+        assertEquals(CardFace.Front, cancelled.face)
+        listOf(CardDetailsAction.FlipCard, CardDetailsAction.Freeze, CardDetailsAction.Reissue, CardDetailsAction.Discard, CardDetailsAction.Reissued("1111"))
+            .forEach { assertEquals(cancelled, cancelled.reduce(it)) }
+    }
 }

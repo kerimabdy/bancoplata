@@ -1,6 +1,19 @@
 package tech.bashga.plata.screens.home
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.random.Random
+import androidx.compose.runtime.State
+import tech.bashga.plata.designsystem.components.ButtonStyle
+import tech.bashga.plata.designsystem.components.CardThumb
+import tech.bashga.plata.designsystem.components.CardThumbKind
+import tech.bashga.plata.designsystem.components.Icon
+import tech.bashga.plata.designsystem.icons.PlataIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -61,7 +74,7 @@ import tech.bashga.plata.navigation.Overlay
 
 enum class CardReveal { Hidden, Loading, Shown }
 
-enum class CardDetailsOverlay { FreezeConfirm }
+enum class CardDetailsOverlay { FreezeConfirm, ReissueConfirm, DiscardConfirm }
 
 /** [frozen], [available], [spent] and [month] come from the repository; the rest is this sheet's own. */
 @Immutable
@@ -74,6 +87,8 @@ data class CardDetailsState(
     val available: Long = 3_500_00,
     val spent: Long = 0,
     val month: Month = Month.June,
+    val number: String = "••••",
+    val cancelled: Boolean = false,
 )
 
 sealed interface CardDetailsAction {
@@ -101,10 +116,25 @@ sealed interface CardDetailsAction {
 
     data object Discard : CardDetailsAction
 
+    data object ConfirmReissue : CardDetailsAction
+
+    /** What [ConfirmReissue] becomes once the ViewModel has drawn the new card's last four digits. */
+    data class Reissued(val lastFour: String) : CardDetailsAction
+
+    data object ConfirmDiscard : CardDetailsAction
+
     data class SecurityOption(val title: String) : CardDetailsAction
 }
 
-fun CardDetailsState.reduce(action: CardDetailsAction): CardDetailsState = when (action) {
+private val CardDetailsAction.needsLiveCard: Boolean
+    get() = this is CardDetailsAction.FlipCard || this is CardDetailsAction.Freeze || this is CardDetailsAction.Unfreeze ||
+        this is CardDetailsAction.Reissue || this is CardDetailsAction.Discard || this is CardDetailsAction.Reissued
+
+fun CardDetailsState.reduce(action: CardDetailsAction): CardDetailsState = if (cancelled && action.needsLiveCard) this else when (action) {
+    CardDetailsAction.Reissue -> copy(overlay = CardDetailsOverlay.ReissueConfirm)
+    is CardDetailsAction.Reissued -> copy(number = action.lastFour, overlay = null)
+    CardDetailsAction.Discard -> copy(overlay = CardDetailsOverlay.DiscardConfirm)
+    CardDetailsAction.ConfirmDiscard -> copy(cancelled = true, frozen = false, face = CardFace.Front, overlay = null)
     CardDetailsAction.FlipCard -> if (card == CardId.Physical) copy(face = if (face == CardFace.Front) CardFace.Details else CardFace.Front) else this
     CardDetailsAction.Freeze -> copy(overlay = CardDetailsOverlay.FreezeConfirm)
     CardDetailsAction.ConfirmFreeze -> copy(frozen = true, overlay = null)
@@ -133,7 +163,8 @@ class CardDetailsViewModel(private val repository: AppRepository, card: CardId) 
 
     fun onAction(action: CardDetailsAction) {
         val current = state.value
-        val next = current.reduce(action)
+        val resolved = if (action == CardDetailsAction.ConfirmReissue) CardDetailsAction.Reissued(Random.nextInt(10_000).toString().padStart(4, '0')) else action
+        val next = current.reduce(resolved)
         if (next.frozen != current.frozen) repository.setFrozen(current.card, next.frozen)
         local.value = next
     }
@@ -204,6 +235,8 @@ fun CardDetailsContent(state: CardDetailsState, onAction: (CardDetailsAction) ->
                     onFreeze = { onAction(if (state.frozen) CardDetailsAction.Unfreeze else CardDetailsAction.Freeze) },
                     onReissue = { onAction(CardDetailsAction.Reissue) },
                     onDiscard = { onAction(CardDetailsAction.Discard) },
+                    cancelled = state.cancelled,
+                    number = state.number,
                 )
                 Column(
                     Modifier.padding(start = spacing.screenMargin, end = spacing.screenMargin, top = spacing.cardGap),
@@ -235,21 +268,63 @@ fun CardDetailsContent(state: CardDetailsState, onAction: (CardDetailsAction) ->
         }
         Spacer(Modifier.height(PlataSafeArea.current.bottom + spacing.s20))
     }
-    Overlay(state.overlay, onDismiss = { onAction(CardDetailsAction.CloseOverlay) }) {
+    Overlay(state.overlay, onDismiss = { onAction(CardDetailsAction.CloseOverlay) }) { overlay ->
         val close = { onAction(CardDetailsAction.CloseOverlay) }
         DialogPlacement(onDismiss = close) {
             Box(Modifier.padding(bottom = FreezeDialogLift)) {
-            Dialog(
-                "Freeze card",
-                body = "No charges can be made. Unfreeze it\nwhenever you want.",
-                onClose = close,
-                mediaContent = {
-                    Image(painterResource(Res.drawable.raster_dialog_snowflake), null, Modifier.size(SnowflakeWidth, SnowflakeHeight))
-                },
-                contentTop = SnowflakeTop,
-                actions = { Button("Freeze", { onAction(CardDetailsAction.ConfirmFreeze) }, Modifier.fillMaxWidth()) },
-            )
+                when (overlay) {
+                    CardDetailsOverlay.FreezeConfirm -> Dialog(
+                        "Freeze card",
+                        body = "No charges can be made. Unfreeze it\nwhenever you want.",
+                        onClose = close,
+                        mediaContent = {
+                            val turn = spinning(SnowflakeTurnMillis)
+                            Image(
+                                painterResource(Res.drawable.raster_dialog_snowflake),
+                                null,
+                                Modifier.size(SnowflakeWidth, SnowflakeHeight).graphicsLayer { rotationZ = turn.value },
+                            )
+                        },
+                        contentTop = SnowflakeTop,
+                        actions = { Button("Freeze", { onAction(CardDetailsAction.ConfirmFreeze) }, Modifier.fillMaxWidth()) },
+                    )
+                    CardDetailsOverlay.ReissueConfirm -> Dialog(
+                        "Reissue card",
+                        body = "Get new card details for safer online\npurchases. Services linked to your current\ndetails won’t need updating.",
+                        onClose = close,
+                        mediaContent = {
+                            val turn = spinning(RefreshTurnMillis)
+                            Icon(
+                                PlataIcons.Refresh,
+                                Modifier.graphicsLayer { rotationZ = turn.value },
+                                size = DialogGlyphSize,
+                                brush = PlataTheme.gradients.glyph,
+                            )
+                        },
+                        actions = { Button("Reissue", { onAction(CardDetailsAction.ConfirmReissue) }, Modifier.fillMaxWidth()) },
+                    )
+                    CardDetailsOverlay.DiscardConfirm -> Dialog(
+                        "Discard card",
+                        body = "You won’t be able to use this card after\ndiscarding it. This won’t affect your account.",
+                        onClose = close,
+                        mediaContent = { CardThumb(CardThumbKind.Physical, number = state.number) },
+                        actions = { Button("Discard", { onAction(CardDetailsAction.ConfirmDiscard) }, Modifier.fillMaxWidth(), style = ButtonStyle.Destructive) },
+                    )
+                }
             }
         }
     }
 }
+
+private const val SnowflakeTurnMillis = 8_000
+private const val RefreshTurnMillis = 1_600
+private val DialogGlyphSize = 64.dp
+
+@Composable
+private fun spinning(periodMillis: Int): State<Float> =
+    rememberInfiniteTransition(label = "spin").animateFloat(
+        0f,
+        360f,
+        infiniteRepeatable(tween(periodMillis, easing = LinearEasing)),
+        label = "angle",
+    )
