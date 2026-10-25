@@ -1,15 +1,9 @@
 package tech.bashga.plata.navigation
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +12,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -25,10 +21,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
@@ -38,14 +38,19 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.LocalOwnersProvider
+import androidx.navigationevent.NavigationEvent
 import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import kotlinx.coroutines.launch
+import kotlin.time.TimeSource
 import tech.bashga.plata.designsystem.components.PageSheetBackdrop
 import tech.bashga.plata.designsystem.components.PageSheetSurface
 import tech.bashga.plata.designsystem.components.PageSheetTop
 import tech.bashga.plata.designsystem.components.SheetPresenter
+import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /** A run of back-stack entries drawn together: the base screen, or a sheet or cover with what was pushed inside it. */
@@ -84,6 +89,7 @@ fun PlataNavHost(
     graph: NavGraph,
     modifier: Modifier = Modifier,
     baseFrame: @Composable (top: NavBackStackEntry, content: @Composable () -> Unit) -> Unit = { _, content -> content() },
+    style: BackStyle = platformBackStyle,
 ) {
     val viewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) { "PlataNavHost needs a ViewModelStoreOwner" }
     controller.setViewModelStore(viewModelStoreOwner.viewModelStore)
@@ -96,13 +102,37 @@ fun PlataNavHost(
 
     val backStack by navigator.backStack.collectAsState()
     val inTransition by navigator.transitionsInProgress.collectAsState()
+    val topEntry = backStack.lastOrNull()
+    val gesture = remember { BackGesture() }
     if (LocalNavigationEventDispatcherOwner.current != null) {
+        val backState = rememberNavigationEventState(NavigationEventInfo.None)
+        val scope = rememberCoroutineScope()
+        LaunchedEffect(backState) {
+            snapshotFlow { backState.transitionState }.collect { state ->
+                if (state is NavigationEventTransitionState.InProgress && state.direction == NavigationEventTransitionState.TRANSITIONING_BACK) {
+                    gesture.track(navigator.backStack.value.lastOrNull(), state.latestEvent)
+                }
+            }
+        }
         NavigationBackHandler(
-            rememberNavigationEventState(NavigationEventInfo.None),
+            backState,
             isBackEnabled = backStack.size > 1,
-            onBackCompleted = { controller.popBackStack() },
+            onBackCancelled = {
+                // UIKit's edge pan cancels on a slow release past halfway, where UINavigationController would still pop
+                if (style == BackStyle.Ios && gesture.entry != null && gesture.shouldCommit()) {
+                    gesture.release()
+                    controller.popBackStack()
+                } else {
+                    scope.launch { gesture.cancel() }
+                }
+            },
+            onBackCompleted = {
+                gesture.release()
+                controller.popBackStack()
+            },
         )
     }
+    val reduceMotion = rememberReduceMotion()
 
     val holder = rememberSaveableStateHolder()
     val composed = remember { mutableStateListOf<NavBackStackEntry>() }
@@ -112,13 +142,14 @@ fun PlataNavHost(
     val drawn = (layers + exiting).sortedWith(compareBy<Layer> { it.depth }.thenBy { it !in exiting })
 
     val visibility = drawn.associate { layer ->
-        layer.key to key(layer.key) {
-            transition.animateFloat({ layerSpec() }, label = "layer") { state ->
+        val entrance = key(layer.key) {
+            transition.animateFloat({ navSpring() }, label = "layer") { state ->
                 if (state.any { it.key == layer.key }) 1f else 0f
             }.value
         }
+        val predictive = if (style == BackStyle.Android && layer.depth > 0 && layer.entries.size == 1) gesture.predictive(layer.top) else 0f
+        layer.key to entrance * (1f - SheetBackLift * predictive)
     }
-    val topEntry = backStack.lastOrNull()
     val drag = remember { mutableStateMapOf<Any, Float>() }
     // how presented a sheet is: its entrance, less however far it is dragged down
     val presented = { layer: Layer -> visibility.getValue(layer.key) * (1f - (drag[layer.key] ?: 0f)) }
@@ -145,9 +176,11 @@ fun PlataNavHost(
                     isTop = layer.top == topEntry,
                     blocksBelow = layer.depth > 0,
                     baseFrame = { content -> baseFrame(layer.top, content) },
+                    leaving = layer in exiting,
                     onSheetDrag = { drag[layer.key] = it },
                 ) {
-                    LayerContent(layer, backStack, isTopLayer = layer.top == topEntry) { entry, isTop ->
+                    val swiped = if (layer.top == topEntry && layer.entries.size > 1) gesture.takeIf { it.entry == layer.top } else null
+                    LayerContent(layer, backStack, gesture, swiped, style, reduceMotion, isTopLayer = layer.top == topEntry) { entry, isTop ->
                         EntryContent(entry, isTop, holder, navigator, composed)
                     }
                 }
@@ -161,11 +194,90 @@ fun PlataNavHost(
     }
 }
 
-internal fun <T> layerSpec() = tween<T>(PresentMillis, easing = FastOutSlowInEasing)
+/** How far a predictive back may lower a sheet or cover, as a fraction of its entrance. */
+private const val SheetBackLift = 0.1f
+
+private val PredictiveEasing = CubicBezierEasing(0.1f, 0.1f, 0f, 1f)
+
+/** Rightward release speed, in screen widths per second, that commits an iOS swipe short of halfway. */
+private const val FlingCommit = 2.5f
+
+/**
+ * The system back gesture in flight (Android predictive back, the iOS edge swipe), as the host's handler sees it. Only
+ * reaches here when no screen's [PlataBackHandler] claims back, so it always means "pop the top entry".
+ */
+@Stable
+private class BackGesture {
+    var entry by mutableStateOf<NavBackStackEntry?>(null)
+        private set
+    val progress = Animatable(0f)
+    var edge by mutableStateOf(NavigationEvent.EDGE_LEFT)
+        private set
+
+    /** Set on commit: the entry the gesture popped and where it let go, for the pop to carry on from. */
+    var released: NavBackStackEntry? = null
+        private set
+    var releasedAt = 0f
+        private set
+    var releasedVelocity = 0f
+        private set
+
+    /** Where the top screen still is in its push slide; the layer drawing it sets this so a swipe can grab it mid-push. */
+    var pushOffset: (NavBackStackEntry) -> Float = { 0f }
+    private var grabbedAt = 0f
+
+    private var sampledAt = TimeSource.Monotonic.markNow()
+    private var frameMillis = 0L
+    private var velocity = 0f
+
+    suspend fun track(top: NavBackStackEntry?, event: NavigationEvent) {
+        if (entry == null) {
+            entry = top
+            edge = event.swipeEdge
+            velocity = 0f
+            grabbedAt = top?.let(pushOffset) ?: 0f
+        } else {
+            val seconds = if (event.frameTimeMillis > 0 && frameMillis > 0) {
+                (event.frameTimeMillis - frameMillis) / 1_000f
+            } else {
+                sampledAt.elapsedNow().inWholeMicroseconds / 1_000_000f
+            }
+            if (seconds > 0f) velocity = (grabbed(event.progress) - progress.value) / seconds
+        }
+        sampledAt = TimeSource.Monotonic.markNow()
+        frameMillis = event.frameTimeMillis
+        progress.snapTo(grabbed(event.progress))
+    }
+
+    private fun grabbed(fingerProgress: Float) = grabbedAt + fingerProgress * (1f - grabbedAt)
+
+    /** True when an iOS swipe was let go far or fast enough that the edge recogniser's cancel should be overruled. */
+    fun shouldCommit() = progress.value > 0.5f || velocity > FlingCommit
+
+    fun release() {
+        released = entry
+        releasedAt = progress.value
+        releasedVelocity = velocity
+        entry = null
+    }
+
+    suspend fun cancel() {
+        progress.animateTo(0f, navSpring(), velocity)
+        entry = null
+    }
+
+    /** Eased predictive-back progress for [top]: live while swiping, frozen at release while it leaves. */
+    fun predictive(top: NavBackStackEntry): Float = when (top) {
+        entry -> PredictiveEasing.transform(progress.value)
+        released -> PredictiveEasing.transform(releasedAt)
+        else -> 0f
+    }
+}
 
 /**
  * One layer of the stack at [visibility] (0–1, its entrance), with the treatment the layer above gives it ([stacked],
- * [dimmed]). The nav host and the screenshot harness both draw layers with it.
+ * [dimmed]). A [leaving] base layer stays put under the root that replaces it. The nav host and the screenshot harness
+ * both draw layers with it.
  */
 @Composable
 internal fun LayerFrame(
@@ -176,6 +288,7 @@ internal fun LayerFrame(
     isTop: Boolean,
     blocksBelow: Boolean,
     baseFrame: @Composable (content: @Composable () -> Unit) -> Unit,
+    leaving: Boolean = false,
     onSheetDrag: (Float) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
@@ -185,10 +298,10 @@ internal fun LayerFrame(
             .fillMaxSize()
             .graphicsLayer {
                 when (presentation) {
-                    Presentation.Push -> if (visibility < 1f) {
-                        // a root replace: the new root zooms in as the old one fades
+                    Presentation.Push -> if (visibility < 1f && !leaving) {
+                        // a root replace: the new root fades in over the old one, which stays opaque underneath
                         alpha = visibility
-                        scaleX = 0.85f + 0.15f * visibility
+                        scaleX = 0.96f + 0.04f * visibility
                         scaleY = scaleX
                     }
                     Presentation.Sheet, Presentation.Cover -> translationY = (1f - visibility) * size.height
@@ -212,28 +325,162 @@ internal fun LayerFrame(
     }
 }
 
+/**
+ * A push or pop between [front] and [behind] inside one layer. [offset] is how far [front] has gone (0 on screen,
+ * 1 off it); it springs to [target], after which only the screen left on top is drawn. [predictive] is the Android
+ * back-gesture shrink a pop leaves from, swiped from [edge].
+ */
+@Stable
+private class PushMotion(
+    val front: NavBackStackEntry,
+    val behind: NavBackStackEntry?,
+    from: Float,
+    val target: Float,
+    val velocity: Float = 0f,
+    val predictive: Float = 0f,
+    val edge: Int = NavigationEvent.EDGE_LEFT,
+) {
+    val offset = Animatable(from)
+    var settled by mutableStateOf(behind == null)
+    val top get() = if (target == 1f) checkNotNull(behind) else front
+}
+
 @Composable
 private fun LayerContent(
     layer: Layer,
     backStack: List<NavBackStackEntry>,
+    gesture: BackGesture,
+    swiped: BackGesture?,
+    style: BackStyle,
+    reduceMotion: Boolean,
     isTopLayer: Boolean,
     entryContent: @Composable (NavBackStackEntry, Boolean) -> Unit,
 ) {
-    AnimatedContent(
-        targetState = layer.top,
-        contentKey = { it.id },
-        transitionSpec = {
-            val pop = initialState !in backStack
-            when {
-                isTabSwitch(initialState, targetState) -> EnterTransition.None togetherWith ExitTransition.None
-                pop -> (slideInHorizontally(tween(PresentMillis)) { -it / 3 } togetherWith slideOutHorizontally(tween(PresentMillis)) { it })
-                    .apply { targetContentZIndex = -1f }
-                else -> slideInHorizontally(tween(PresentMillis)) { it } togetherWith slideOutHorizontally(tween(PresentMillis)) { -it / 3 }
+    val last = remember { arrayOfNulls<PushMotion>(1) }
+    val motion = remember(layer.top) {
+        val prev = last[0]
+        val shown = prev?.top
+        when {
+            prev == null || shown == null || shown == layer.top || isTabSwitch(shown, layer.top) -> PushMotion(layer.top, null, 0f, 0f)
+            shown !in backStack -> when {
+                gesture.released == shown -> PushMotion(
+                    shown, layer.top,
+                    from = if (style == BackStyle.Ios) gesture.releasedAt else 0f,
+                    target = 1f,
+                    velocity = if (style == BackStyle.Ios) gesture.releasedVelocity else 0f,
+                    predictive = if (style == BackStyle.Android) PredictiveEasing.transform(gesture.releasedAt) else 0f,
+                    edge = gesture.edge,
+                )
+                !prev.settled && prev.behind == layer.top -> PushMotion(shown, layer.top, prev.offset.value, 1f, prev.offset.velocity)
+                else -> PushMotion(shown, layer.top, 0f, 1f)
             }
-        },
-        label = "push",
-    ) { entry ->
-        entryContent(entry, isTopLayer && entry == layer.top)
+            else -> PushMotion(layer.top, shown, 1f, 0f)
+        }.also { last[0] = it }
+    }
+    val pushing = { entry: NavBackStackEntry -> !motion.settled && motion.target == 0f && motion.front == entry }
+    if (isTopLayer && style == BackStyle.Ios) {
+        SideEffect { gesture.pushOffset = { entry -> if (pushing(entry)) motion.offset.value else 0f } }
+    }
+    val grabbed = swiped != null && pushing(layer.top)
+    LaunchedEffect(motion, grabbed) {
+        if (motion.settled) return@LaunchedEffect
+        // the swipe now drives the slide from where it caught it, like an interrupted UIKit push
+        if (!grabbed) motion.offset.animateTo(motion.target, navSpring(), motion.velocity)
+        motion.settled = true
+    }
+
+    val swipeBehind = if (swiped != null && motion.settled && motion.top == layer.top) layer.entries[layer.entries.lastIndex - 1] else null
+    val front = if (motion.settled) motion.top else motion.front
+    val behind = if (motion.settled) swipeBehind else motion.behind
+    val pose = when {
+        !motion.settled -> PushPose(motion.offset.value, motion.predictive, motion.edge)
+        swiped == null -> PushPose(0f, 0f, NavigationEvent.EDGE_LEFT)
+        style == BackStyle.Ios -> PushPose(swiped.progress.value, 0f, swiped.edge)
+        else -> PushPose(0f, PredictiveEasing.transform(swiped.progress.value), swiped.edge)
+    }
+    val look = if (reduceMotion) PushLook.Fade else if (style == BackStyle.Ios) PushLook.Ios else PushLook.Android
+
+    Box(Modifier.fillMaxSize()) {
+        listOfNotNull(behind, front).forEach { entry ->
+            key(entry.id) {
+                val isFront = entry == front && behind != null
+                val isBehind = entry == behind
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .then(if (isFront) Modifier.pushFront(pose, look) else if (isBehind) Modifier.pushBehind(pose, look) else Modifier)
+                        .background(PlataTheme.colors.surfaceBackground),
+                ) {
+                    entryContent(entry, isTopLayer && entry == layer.top && entry == front)
+                }
+            }
+        }
+    }
+}
+
+private enum class PushLook { Ios, Android, Fade }
+
+/** Where a push or pop is: [offset] 0–1 how far the front screen has gone, [predictive] 0–1 its back-gesture shrink. */
+private class PushPose(val offset: Float, val predictive: Float, val edge: Int)
+
+@Composable
+private fun Modifier.pushFront(pose: PushPose, look: PushLook): Modifier {
+    val shade = PlataTheme.colors.sheetBackdrop
+    val deviceShape = ContinuousRoundedShape(PlataTheme.radii.device)
+    val inset = PlataTheme.spacing.s8
+    val shadowWidth = PlataTheme.spacing.s16
+    return when (look) {
+        PushLook.Fade -> graphicsLayer { alpha = 1f - pose.offset }
+        PushLook.Ios -> this
+            .graphicsLayer { translationX = pose.offset * size.width }
+            // shaped like the screen so the edge shadow rounds its corners; top, bottom and right fall off screen
+            .dropShadow(deviceShape) {
+                radius = shadowWidth.toPx()
+                color = shade
+                alpha = 0.2f * (1f - pose.offset)
+            }
+            // after the shadow, so the clip rounds the screen but not the shadow outside it
+            .graphicsLayer {
+                shape = deviceShape
+                clip = pose.offset > 0f
+            }
+        PushLook.Android -> graphicsLayer {
+            shape = deviceShape
+            clip = pose.offset > 0f || pose.predictive > 0f
+            val toward = if (pose.edge == NavigationEvent.EDGE_RIGHT) -1f else 1f
+            if (pose.predictive > 0f) {
+                val scale = 1f - 0.1f * pose.predictive
+                scaleX = scale
+                scaleY = scale
+                translationX = toward * (pose.predictive * (size.width / 20f - inset.toPx()) + pose.offset * size.width / 4f)
+                alpha = 1f - pose.offset
+            } else {
+                translationX = pose.offset * size.width
+            }
+        }
+    }
+}
+
+@Composable
+private fun Modifier.pushBehind(pose: PushPose, look: PushLook): Modifier {
+    val shade = PlataTheme.colors.sheetBackdrop
+    return when (look) {
+        PushLook.Fade -> this
+        PushLook.Ios -> this
+            .graphicsLayer { translationX = -0.3f * size.width * (1f - pose.offset) }
+            .drawWithContent {
+                drawContent()
+                drawRect(shade.copy(alpha = 0.1f * (1f - pose.offset)))
+            }
+        // a light scrim, so the shrinking screen's edges read against a page of the same colour
+        PushLook.Android -> if (pose.predictive > 0f) {
+            drawWithContent {
+                drawContent()
+                drawRect(shade.copy(alpha = 0.1f * pose.predictive * (1f - pose.offset)))
+            }
+        } else {
+            graphicsLayer { translationX = -0.3f * size.width * (1f - pose.offset) }
+        }
     }
 }
 
@@ -293,10 +540,9 @@ internal fun RootReplaceTransition(from: @Composable () -> Unit, to: @Composable
     var replaced by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { replaced = true }
     val transition = updateTransition(replaced, label = "replace")
-    val outgoing by transition.animateFloat({ layerSpec() }, label = "from") { if (it) 0f else 1f }
-    val incoming by transition.animateFloat({ layerSpec() }, label = "to") { if (it) 1f else 0f }
+    val incoming by transition.animateFloat({ navSpring() }, label = "to") { if (it) 1f else 0f }
     Box(Modifier.fillMaxSize().background(PlataTheme.colors.surfaceBackground)) {
-        if (outgoing > 0f) LayerFrame(Presentation.Push, outgoing, 0f, 0f, isTop = false, blocksBelow = false, baseFrame = { it() }, content = from)
+        if (incoming < 1f) LayerFrame(Presentation.Push, 0f, 0f, 0f, isTop = false, blocksBelow = false, baseFrame = { it() }, leaving = true, content = from)
         if (incoming > 0f) LayerFrame(Presentation.Push, incoming, 0f, 0f, isTop = true, blocksBelow = false, baseFrame = { it() }, content = to)
     }
 }

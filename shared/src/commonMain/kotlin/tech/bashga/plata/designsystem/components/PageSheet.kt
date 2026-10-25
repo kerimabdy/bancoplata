@@ -115,28 +115,21 @@ fun SheetPresenter(
         Box(
             Modifier
                 .fillMaxSize()
-                .then(
-                    if (stacked > 0f) {
-                        Modifier.graphicsLayer {
-                            val scale = 1f - stacked * (2 * inset.toPx() / size.width)
-                            scaleX = scale
-                            scaleY = scale
-                            transformOrigin = TransformOrigin(0.5f, 0f)
-                            translationY = stacked * (safeTop.toPx() - scale * cardTop.toPx())
-                            if (cardTop == 0.dp) {
-                                shape = ContinuousTopRoundedShape(lerp(deviceRadius, radius, stacked) / scale)
-                                clip = true
-                            }
-                        }
-                    } else {
-                        Modifier
-                    },
-                ),
+                .graphicsLayer {
+                    val scale = 1f - stacked * (2 * inset.toPx() / size.width)
+                    scaleX = scale
+                    scaleY = scale
+                    transformOrigin = TransformOrigin(0.5f, 0f)
+                    translationY = stacked * (safeTop.toPx() - scale * cardTop.toPx())
+                    shape = ContinuousTopRoundedShape(lerp(deviceRadius, radius, stacked) / scale)
+                    // at rest the presenter is the full screen, unclipped
+                    clip = cardTop == 0.dp && stacked > 0f
+                },
         ) {
             content()
-            if (stacked > 0f) Box(Modifier.fillMaxSize().background(colors.stackedPresenterDim.copy(alpha = colors.stackedPresenterDim.alpha * stacked)))
+            Box(Modifier.fillMaxSize().background(colors.stackedPresenterDim.copy(alpha = colors.stackedPresenterDim.alpha * stacked)))
         }
-        if (dimmed > 0f) Box(Modifier.fillMaxSize().background(colors.sheetDim.copy(alpha = colors.sheetDim.alpha * dimmed)))
+        Box(Modifier.fillMaxSize().background(colors.sheetDim.copy(alpha = colors.sheetDim.alpha * dimmed)))
     }
 }
 

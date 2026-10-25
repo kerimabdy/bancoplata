@@ -1,18 +1,18 @@
 package tech.bashga.plata.navigation
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animate
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
@@ -25,30 +25,41 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.DirectNavigationEventInput
 import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.NavigationEventTransitionState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import tech.bashga.plata.designsystem.components.BackGestureShrink
+import tech.bashga.plata.designsystem.components.LocalModalMotion
+import tech.bashga.plata.designsystem.components.ModalMotion
 import tech.bashga.plata.designsystem.components.PageSheetBackdrop
 import tech.bashga.plata.designsystem.components.PageSheetSurface
 import tech.bashga.plata.designsystem.components.SheetPresenter
-import kotlin.math.roundToInt
 
 internal const val PresentMillis = 350
 
@@ -60,12 +71,36 @@ val LocalIsTopEntry = compositionLocalOf { true }
  * "pop me" (a step screen's previous step, DeliveryDetails' close event); without one, back pops the top destination.
  */
 @Composable
-fun PlataBackHandler(enabled: Boolean = true, onBack: () -> Unit) {
+fun PlataBackHandler(enabled: Boolean = true, onBack: () -> Unit) = PlataBackHandler(enabled, gesture = null, onBack)
+
+/** Android's predictive back gesture driving an overlay: [progress] follows the finger, springs back on cancel. */
+internal class OverlayBackGesture {
+    val progress = Animatable(0f)
+    var committed by mutableStateOf(false)
+}
+
+@Composable
+internal fun PlataBackHandler(enabled: Boolean, gesture: OverlayBackGesture?, onBack: () -> Unit) {
     if (LocalNavigationEventDispatcherOwner.current == null) return
+    val state = rememberNavigationEventState(NavigationEventInfo.None)
+    if (gesture != null && platformBackStyle == BackStyle.Android) {
+        LaunchedEffect(state, gesture) {
+            snapshotFlow { state.transitionState }.collectLatest { transition ->
+                if (transition is NavigationEventTransitionState.InProgress) {
+                    if (transition.direction == NavigationEventTransitionState.TRANSITIONING_BACK) gesture.progress.snapTo(transition.latestEvent.progress)
+                } else if (!gesture.committed) {
+                    gesture.progress.animateTo(0f, navSpring())
+                }
+            }
+        }
+    }
     NavigationBackHandler(
-        rememberNavigationEventState(NavigationEventInfo.None),
+        state,
         isBackEnabled = enabled && LocalIsTopEntry.current,
-        onBackCompleted = onBack,
+        onBackCompleted = {
+            gesture?.committed = true
+            onBack()
+        },
     )
 }
 
@@ -94,6 +129,8 @@ internal class OverlayRequest(kind: OverlayKind, visible: Boolean, content: @Com
     var onDismiss: () -> Unit = {}
     var drag by mutableFloatStateOf(0f)
     val progress = Animatable(if (visible) 1f else 0f)
+    val back = OverlayBackGesture()
+    var presentations by mutableIntStateOf(0)
 }
 
 private val OverlayRequest.presented get() = progress.value * (1f - drag)
@@ -125,18 +162,42 @@ fun OverlayHost(modifier: Modifier = Modifier, cardTop: Dp = 0.dp, content: @Com
 
 @Composable
 private fun OverlayFrame(request: OverlayRequest) {
-    LaunchedEffect(request.visible) { request.progress.animateTo(if (request.visible) 1f else 0f, tween(PresentMillis)) }
-    val progress = request.progress.value
-    if (progress == 0f) return
+    LaunchedEffect(request.visible) {
+        if (request.visible && request.progress.value < 1f) {
+            request.presentations++
+            request.back.committed = false
+            request.back.progress.snapTo(0f)
+        }
+        request.progress.animateTo(if (request.visible) 1f else 0f, navSpring())
+    }
+    // the overlay's own back handler may refuse (a confirm instead): spring back from the gesture
+    LaunchedEffect(request.visible, request.back.committed) {
+        if (!request.visible || !request.back.committed) return@LaunchedEffect
+        repeat(2) { withFrameNanos {} }
+        request.back.committed = false
+        request.back.progress.animateTo(0f, navSpring())
+    }
+    val hidden by remember(request) { derivedStateOf { request.progress.value == 0f } }
+    if (hidden) return
     when (request.kind) {
-        OverlayKind.Plain -> Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress }) { request.content() }
+        OverlayKind.Plain -> {
+            val motion = remember(request) { ModalMotion(progress = { request.progress.value }, back = { request.back.progress.value }) }
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (motion.slides) 1f else request.progress.value }) {
+                CompositionLocalProvider(LocalModalMotion provides motion) { request.content() }
+            }
+        }
         is OverlayKind.Sheet -> Box(
             Modifier
                 .fillMaxSize()
-                .graphicsLayer { translationY = (1f - progress) * size.height }
+                .graphicsLayer {
+                    translationY = (1f - request.progress.value) * size.height
+                    scaleX = 1f - BackGestureShrink * request.back.progress.value
+                    scaleY = scaleX
+                    transformOrigin = TransformOrigin(0.5f, 1f)
+                }
                 .blockPointers(),
         ) {
-            PageSheetSurface(Modifier.swipeToDismiss(request.onDismiss) { request.drag = it }) { request.content() }
+            PageSheetSurface(Modifier.swipeToDismiss(request.onDismiss, { request.drag = it }, resetKey = request.presentations)) { request.content() }
         }
     }
 }
@@ -158,7 +219,7 @@ private fun <T : Any> RegisterOverlay(value: T?, kind: OverlayKind, onDismiss: (
         host.requests += request
         onDispose { host.requests -= request }
     }
-    PlataBackHandler(enabled = value != null && dismissOnBack, onBack = onDismiss)
+    PlataBackHandler(enabled = value != null && dismissOnBack, gesture = request.back, onBack = onDismiss)
 }
 
 /**
@@ -186,62 +247,119 @@ internal fun Modifier.blockPointers(): Modifier = pointerInput(Unit) {
     }
 }
 
-private val DismissDistance = 120.dp
+private const val DismissFraction = 0.5f
+private val DismissVelocity = 1000.dp
+private val RubberBandLimit = 32.dp
+private const val RubberBandStiffness = 0.55f
+
+private class SheetDrag(private val rubberLimit: Float, private val dismissVelocity: Float) {
+    var offset by mutableFloatStateOf(0f)
+        private set
+    var height = 0
+    var coordinates: LayoutCoordinates? = null
+    var onDismiss: () -> Unit = {}
+    var onDrag: (Float) -> Unit = {}
+    var onThreshold: () -> Unit = {}
+    private var raw = 0f
+    private var settle: Job? = null
+
+    private val pastThreshold get() = height > 0 && offset > height * DismissFraction
+
+    private fun show(value: Float) {
+        offset = value
+        onDrag(if (height > 0) value.coerceAtLeast(0f) / height else 0f)
+    }
+
+    fun grab() {
+        settle?.cancel()
+        settle = null
+        raw = if (offset >= 0f) offset else -(rubberLimit / (rubberLimit + offset) - 1f) * rubberLimit / RubberBandStiffness
+    }
+
+    fun dragBy(delta: Float) {
+        if (settle != null) grab()
+        val wasPast = pastThreshold
+        raw += delta
+        show(if (raw >= 0f) raw else -rubberLimit * (1f - 1f / (-raw * RubberBandStiffness / rubberLimit + 1f)))
+        if (pastThreshold != wasPast) onThreshold()
+    }
+
+    fun release(scope: CoroutineScope, velocity: Float) {
+        settle?.cancel()
+        settle = scope.launch {
+            if (offset > 0f && (pastThreshold || velocity > dismissVelocity)) {
+                springTo(height.toFloat(), velocity)
+                val top = coordinates?.takeIf { it.isAttached }?.positionInRoot()?.y
+                onDismiss()
+                if (top == null || leaving(top)) return@launch
+            }
+            springTo(0f, if (raw >= 0f) velocity else velocity * rubberSlope())
+        }
+    }
+
+    private fun rubberSlope(): Float {
+        val stretch = -raw * RubberBandStiffness / rubberLimit + 1f
+        return RubberBandStiffness / (stretch * stretch)
+    }
+
+    private suspend fun springTo(target: Float, velocity: Float) =
+        animate(offset, target, velocity, navSpring(visibilityThreshold = 0.5f)) { value, _ -> show(value) }
+
+    // the host starts moving the layer within a few frames of a dismissal it accepts
+    private suspend fun leaving(top: Float): Boolean {
+        repeat(8) {
+            withFrameNanos {}
+            val now = coordinates?.takeIf { it.isAttached } ?: return true
+            if (now.positionInRoot().y > top + 1f) return true
+        }
+        return false
+    }
+}
 
 /**
  * Drag a sheet down (or overscroll its content at the top) to dismiss it, as iOS page sheets do. [onDrag] gets how far
- * down it is as a fraction of its height, so the presenter behind can follow it.
+ * down it is as a fraction of its height, so the presenter behind can follow it. A new [resetKey] puts it back at rest.
  */
 @Composable
-internal fun Modifier.swipeToDismiss(onDismiss: () -> Unit, onDrag: (Float) -> Unit = {}): Modifier {
-    val offset = remember { Animatable(0f) }
-    var height by remember { mutableIntStateOf(0) }
-    val drag by rememberUpdatedState(onDrag)
-    LaunchedEffect(offset) {
-        snapshotFlow { if (height > 0) offset.value / height else 0f }.collect { drag(it) }
-    }
+internal fun Modifier.swipeToDismiss(onDismiss: () -> Unit, onDrag: (Float) -> Unit = {}, resetKey: Any? = null): Modifier {
+    val density = LocalDensity.current
+    val sheet = remember(resetKey, density) { with(density) { SheetDrag(RubberBandLimit.toPx(), DismissVelocity.toPx()) } }
+    val haptics = LocalHapticFeedback.current
+    sheet.onDismiss = onDismiss
+    sheet.onDrag = onDrag
+    sheet.onThreshold = { haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
     val scope = rememberCoroutineScope()
-    val threshold = with(LocalDensity.current) { DismissDistance.toPx() }
-    val dismiss by rememberUpdatedState(onDismiss)
-    val settle: (Float) -> Unit = { velocity ->
-        scope.launch {
-            if (offset.value > threshold || velocity > threshold * 8) {
-                dismiss()
-                // stay put while the sheet leaves, so the presenter keeps following it; spring back only if it didn't
-                delay(PresentMillis.toLong())
-            }
-            offset.animateTo(0f, tween(PresentMillis))
-        }
-    }
-    val connection = remember {
+    val connection = remember(sheet, scope) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (offset.value <= 0f || available.y >= 0f) return Offset.Zero
-                val used = maxOf(available.y, -offset.value)
-                scope.launch { offset.snapTo(offset.value + used) }
+                if (sheet.offset <= 0f || available.y >= 0f) return Offset.Zero
+                val used = maxOf(available.y, -sheet.offset)
+                sheet.dragBy(used)
                 return Offset(0f, used)
             }
 
             override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
                 if (source != NestedScrollSource.UserInput || available.y <= 0f) return Offset.Zero
-                scope.launch { offset.snapTo(offset.value + available.y) }
+                sheet.dragBy(available.y)
                 return Offset(0f, available.y)
             }
 
             override suspend fun onPreFling(available: Velocity): Velocity {
-                if (offset.value <= 0f) return Velocity.Zero
-                settle(available.y)
+                if (sheet.offset <= 0f) return Velocity.Zero
+                sheet.release(scope, available.y)
                 return available
             }
         }
     }
     return this
-        .onSizeChanged { height = it.height }
-        .offset { IntOffset(0, offset.value.roundToInt()) }
+        .onPlaced { sheet.coordinates = it }
+        .onSizeChanged { sheet.height = it.height }
+        .graphicsLayer { translationY = sheet.offset }
         .nestedScroll(connection)
         .draggable(
-            rememberDraggableState { delta -> scope.launch { offset.snapTo((offset.value + delta).coerceAtLeast(0f)) } },
+            rememberDraggableState { sheet.dragBy(it) },
             Orientation.Vertical,
-            onDragStopped = { velocity -> settle(velocity) },
+            onDragStarted = { sheet.grab() },
+            onDragStopped = { velocity -> sheet.release(scope, velocity) },
         )
 }

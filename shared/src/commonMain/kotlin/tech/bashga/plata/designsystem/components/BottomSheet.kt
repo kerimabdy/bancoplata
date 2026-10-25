@@ -16,8 +16,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -92,17 +95,46 @@ fun ModalScrim(
     contentAlignment: Alignment = Alignment.BottomCenter,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val motion = LocalModalMotion.current?.takeIf { contentAlignment == Alignment.BottomCenter }
+    // set while composing, so the host's layer already skips its fade on the first visible frame
+    if (motion != null) motion.slides = true
+    val progress = motion?.progress ?: { 1f }
+    val back = motion?.back ?: { 0f }
     Box(
         modifier
             .fillMaxSize()
-            .background(PlataTheme.colors.scrim)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
         contentAlignment = contentAlignment,
     ) {
+        Box(Modifier.matchParentSize().graphicsLayer { alpha = progress() }.background(PlataTheme.colors.scrim))
         // swallow taps on the sheet itself so they don't reach the scrim
-        Box(Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}, content = content)
+        Box(
+            Modifier
+                .graphicsLayer {
+                    translationY = (1f - progress()) * size.height
+                    scaleX = 1f - BackGestureShrink * back()
+                    scaleY = scaleX
+                    transformOrigin = TransformOrigin(0.5f, 1f)
+                }
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+            content = content,
+        )
     }
 }
+
+/**
+ * Provided by the overlay host so a bottom [ModalScrim] slides its content up instead of the whole layer fading, and
+ * shrinks it toward the bottom edge with Android's predictive [back] gesture (0–1).
+ */
+class ModalMotion(val progress: () -> Float, val back: () -> Float = { 0f }) {
+    var slides = false
+        internal set
+}
+
+/** How much a sheet shrinks at the end of a predictive back gesture. */
+internal const val BackGestureShrink = 0.1f
+
+val LocalModalMotion = staticCompositionLocalOf<ModalMotion?> { null }
 
 @Preview
 @Composable
