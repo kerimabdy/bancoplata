@@ -1,13 +1,13 @@
 package tech.bashga.plata.designsystem.foundation
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.IndicationNodeFactory
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -81,28 +81,35 @@ private class PressFadeNode(private val interactionSource: InteractionSource) : 
 }
 
 /**
- * Shrinks the element from the instant a finger lands. `clickable` holds its press 150 ms inside scrolling
- * containers on iOS, so this reads raw pointer-down instead and lets go once a scroll claims the touch.
+ * Shrinks the element to [pressedScale] from the instant a finger lands. `clickable` holds its press 150 ms inside
+ * scrolling containers on iOS, so this reads raw pointer-down instead and lets go once a scroll claims the touch.
+ * Pass a [state] to read the scale from outside, e.g. to launch a transition from the pressed size.
  */
-fun Modifier.pressScale(enabled: Boolean = true): Modifier = this then PressScaleElement(enabled)
+fun Modifier.pressScale(enabled: Boolean = true, pressedScale: Float = CardMotion.pressedScale, state: PressScaleState? = null): Modifier =
+    this then PressScaleElement(enabled, pressedScale, state)
 
-private const val PRESSED_SCALE = 0.97f
+/** The live scale of a [pressScale] element. */
+@Stable
+class PressScaleState {
+    internal val scale = Animatable(1f, visibilityThreshold = 0.0001f)
+    val value: Float get() = scale.value
+}
 
-// critically damped springs: ~0.15 s response going in, ~0.3 s coming back out
-private val PressInSpring = spring<Float>(dampingRatio = 1f, stiffness = 1750f, visibilityThreshold = 0.0001f)
-private val PressOutSpring = spring<Float>(dampingRatio = 1f, stiffness = 440f, visibilityThreshold = 0.0001f)
 
-private data class PressScaleElement(val enabled: Boolean) : ModifierNodeElement<PressScaleNode>() {
-    override fun create() = PressScaleNode(enabled)
+private data class PressScaleElement(val enabled: Boolean, val pressedScale: Float, val state: PressScaleState?) :
+    ModifierNodeElement<PressScaleNode>() {
+    override fun create() = PressScaleNode(enabled, pressedScale, state ?: PressScaleState())
 
     override fun update(node: PressScaleNode) {
         node.enabled = enabled
+        node.pressedScale = pressedScale
+        if (state != null) node.state = state
         if (!enabled) node.release()
     }
 }
 
-private class PressScaleNode(var enabled: Boolean) : Modifier.Node(), PointerInputModifierNode, LayoutModifierNode {
-    private val scale = Animatable(1f, visibilityThreshold = 0.0001f)
+private class PressScaleNode(var enabled: Boolean, var pressedScale: Float, var state: PressScaleState) :
+    Modifier.Node(), PointerInputModifierNode, LayoutModifierNode {
     private var pressed = false
 
     override fun onPointerEvent(pointerEvent: PointerEvent, pass: PointerEventPass, bounds: IntSize) {
@@ -122,21 +129,21 @@ private class PressScaleNode(var enabled: Boolean) : Modifier.Node(), PointerInp
 
     private fun press() {
         pressed = true
-        coroutineScope.launch { scale.animateTo(PRESSED_SCALE, PressInSpring) }
+        coroutineScope.launch { state.scale.animateTo(pressedScale, CardMotion.pressInSpring()) }
     }
 
     fun release() {
         if (!pressed || !isAttached) return
         pressed = false
-        coroutineScope.launch { scale.animateTo(1f, PressOutSpring) }
+        coroutineScope.launch { state.scale.animateTo(1f, CardMotion.pressOutSpring()) }
     }
 
     override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
         val placeable = measurable.measure(constraints)
         return layout(placeable.width, placeable.height) {
             placeable.placeWithLayer(0, 0) {
-                scaleX = scale.value
-                scaleY = scale.value
+                scaleX = state.value
+                scaleY = state.value
             }
         }
     }

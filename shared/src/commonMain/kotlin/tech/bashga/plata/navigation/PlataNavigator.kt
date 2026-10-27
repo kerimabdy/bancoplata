@@ -36,7 +36,7 @@ class PlataNavigator : Navigator<PlataNavigator.Destination>() {
         entries.forEach { state.push(it) }
     }
 
-    override fun createDestination(): Destination = Destination(this, Presentation.Push, null, false) {}
+    override fun createDestination(): Destination = Destination(this, Presentation.Push, null, false, false) {}
 
     override fun popBackStack(popUpTo: NavBackStackEntry, savedState: Boolean) {
         state.popWithTransition(popUpTo, savedState)
@@ -54,6 +54,7 @@ class PlataNavigator : Navigator<PlataNavigator.Destination>() {
         val presentation: Presentation,
         val backdrop: PageSheetBackdrop?,
         val hidesTabBar: Boolean,
+        val expands: Boolean,
         internal val content: @Composable (NavBackStackEntry) -> Unit,
     ) : NavDestination(navigator)
 }
@@ -66,13 +67,15 @@ class PlataDestinationBuilder(
     private val presentation: Presentation,
     private val backdrop: PageSheetBackdrop?,
     private val hidesTabBar: Boolean,
+    private val expands: Boolean,
     private val content: @Composable (NavBackStackEntry) -> Unit,
 ) : NavDestinationBuilder<PlataNavigator.Destination>(plataNavigator, route, typeMap) {
-    override fun instantiateDestination() = PlataNavigator.Destination(plataNavigator, presentation, backdrop, hidesTabBar, content)
+    override fun instantiateDestination() = PlataNavigator.Destination(plataNavigator, presentation, backdrop, hidesTabBar, expands, content)
 }
 
 /**
- * Registers the destination for route class [T]. Read the route's arguments with `entry.toRoute<T>()`.
+ * Registers the destination for route class [T]. Read the route's arguments with `entry.toRoute<T>()`. An [expands]
+ * push doesn't slide: the page grows out of the card it shares elements with (`sharedTransitionBounds`) and pops back in.
  *
  * ```
  * screen<CardDetailsRoute>(Presentation.Sheet) { entry -> CardDetailsScreen(entry.toRoute(), …) }
@@ -82,10 +85,11 @@ inline fun <reified T : Any> NavGraphBuilder.screen(
     presentation: Presentation = Presentation.Push,
     backdrop: PageSheetBackdrop? = null,
     hidesTabBar: Boolean = false,
+    expands: Boolean = false,
     typeMap: Map<KType, NavType<*>> = emptyMap(),
     noinline content: @Composable (NavBackStackEntry) -> Unit,
 ) {
-    destination(PlataDestinationBuilder(provider[PlataNavigator::class], T::class, typeMap, presentation, backdrop, hidesTabBar, content))
+    destination(PlataDestinationBuilder(provider[PlataNavigator::class], T::class, typeMap, presentation, backdrop, hidesTabBar, expands, content))
 }
 
 internal val NavBackStackEntry.plataDestination: PlataNavigator.Destination

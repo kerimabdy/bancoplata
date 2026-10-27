@@ -87,7 +87,7 @@ fun NavGraphBuilder.investGraph(nav: AppNavigator, @Suppress("UNUSED_PARAMETER")
         screen<PortfolioAllocationRoute> {
             PortfolioAllocationScreen(onStock = { nav.navigate(StockDetailRoute(it)) }, onBack = nav::back)
         }
-        screen<InvestmentIdeaRoute>(hidesTabBar = true) { entry ->
+        screen<InvestmentIdeaRoute>(hidesTabBar = true, expands = true) { entry ->
             InvestmentIdeaScreen(
                 entry.toRoute<InvestmentIdeaRoute>().ideaId,
                 onFund = { nav.navigate(StockDetailRoute(it)) },

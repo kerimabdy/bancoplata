@@ -1,6 +1,8 @@
 package tech.bashga.plata.screens.invest
 
 import androidx.compose.runtime.Immutable
+import kotlin.math.abs
+import kotlin.math.roundToLong
 import org.jetbrains.compose.resources.DrawableResource
 import plata.shared.generated.resources.Res
 import plata.shared.generated.resources.raster_idea_ssga
@@ -26,7 +28,6 @@ import plata.shared.generated.resources.raster_logo_ssga
 import plata.shared.generated.resources.raster_logo_tesla
 import plata.shared.generated.resources.raster_logo_vanguard
 import plata.shared.generated.resources.raster_logo_wolf
-import plata.shared.generated.resources.raster_media_vanguard
 import tech.bashga.plata.data.AppSnapshot
 import tech.bashga.plata.data.Currency
 import tech.bashga.plata.data.EntryKind
@@ -35,8 +36,6 @@ import tech.bashga.plata.data.Month
 import tech.bashga.plata.data.formatMoney
 import tech.bashga.plata.data.portfolioCost
 import tech.bashga.plata.designsystem.components.TrendDirection
-import kotlin.math.abs
-import kotlin.math.roundToLong
 
 /** What a ticker looks like: its name, logo and whether the logo is a mark on the light disc. */
 @Immutable
@@ -222,8 +221,8 @@ enum class StockListKind(val title: String) {
 fun stockListKind(name: String): StockListKind = StockListKind.entries.firstOrNull { it.name == name } ?: StockListKind.All
 
 /**
- * An investment idea's page (InvestmentIdea): the fund, its photo, the article and the report. [cardTrend] and [pageTrend]
- * are the "since advice release" changes the feed card (09c22ffa) and the page (cc4f1c47) were captured with.
+ * An investment idea (InvestmentIdea): the fund, its photo, the article and the report. The card and the page it grows
+ * into show the same photo and the same [cardTrend], so nothing swaps mid-flight.
  */
 @Immutable
 data class InvestmentIdea(
@@ -232,14 +231,15 @@ data class InvestmentIdea(
     val title: String,
     val headerTitle: String,
     val cardTrend: Int,
-    val pageTrend: Int,
     val cardImage: DrawableResource,
-    val headerImage: DrawableResource,
     val summary: String,
     val releaseDate: String,
     val bullets: List<String>,
     val report: String,
 )
+
+/** The key an idea's feed card and its page share, so the page grows out of the card. */
+fun ideaCardKey(ideaId: String): Any = "idea-card:$ideaId"
 
 object InvestIdeas {
     const val VANGUARD = "vanguard-ftse-europe"
@@ -251,9 +251,7 @@ object InvestIdeas {
         title = "Vanguard FTSE Europe ETF",
         headerTitle = "Vanguard FTSE\nEurope ETF",
         cardTrend = 38,
-        pageTrend = 147,
         cardImage = Res.drawable.raster_idea_vanguard,
-        headerImage = Res.drawable.raster_media_vanguard,
         summary = "VGK is a passively managed ETF that aims to track the performance of the FTSE Developed Europe All Cap " +
             "Index, which measures the investment returns of stocks issued by companies in major European markets, including the " +
             "United Kingdom, France, Germany, and 13 other countries. VGK holds over 1,200 large, mid, and small cap stocks across " +
@@ -282,9 +280,7 @@ object InvestIdeas {
         title = "SPDR Bloomberg International\nTreasury Bond ETF",
         headerTitle = "SPDR Bloomberg\nInternational\nTreasury Bond ETF",
         cardTrend = 84,
-        pageTrend = 84,
         cardImage = Res.drawable.raster_idea_ssga,
-        headerImage = Res.drawable.raster_idea_ssga,
         summary = "BWX tracks the Bloomberg Global Treasury ex-US Capped Index: investment-grade government bonds issued by " +
             "developed countries outside the United States, in their local currencies.",
         releaseDate = "29 May 2025",

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,6 +70,9 @@ internal val NavDestination.tab: TabBarTab?
 // the bar's 3pt top padding plus its 46 items, above the home-indicator inset
 private val TabBarRowHeight = 49.dp
 
+/** The tab bar's row, which a tab page under it pads by; zero off the tab shell. */
+internal val LocalTabBarInset = compositionLocalOf { 0.dp }
+
 /** The tab bar data the repository drives: the invite item follows the month, the badges count tiles and messages. */
 data class TabBarData(val inviteValue: String, val inviteKind: TabBarItemKind, val homeBadge: String?, val supportBadge: String?)
 
@@ -82,13 +86,20 @@ val AppSnapshot.tabBarData: TabBarData
 
 /**
  * Draws [content] full screen with the tab bar over its bottom edge when [active] is set. Content sees a safe-area
- * bottom that includes the bar, like iOS, so it pads its own scroll content and CTAs.
+ * bottom that includes the bar, like iOS, so it pads its own scroll content and CTAs; with [insetContent] false the
+ * caller insets each page instead.
  */
 @Composable
-fun TabShell(active: TabBarTab?, data: TabBarData, onSelect: (TabBarTab) -> Unit, content: @Composable () -> Unit) {
+fun TabShell(
+    active: TabBarTab?,
+    data: TabBarData,
+    onSelect: (TabBarTab) -> Unit,
+    insetContent: Boolean = true,
+    content: @Composable () -> Unit,
+) {
     val safeArea = PlataSafeArea.current
     val screenBackdrop = LocalBackdrop.current
-    val barHeight = if (active != null) TabBarRowHeight else 0.dp
+    val barHeight = if (active != null && insetContent) TabBarRowHeight else 0.dp
     // the same tree with or without the bar: a different one would remount the nav stack and drop its push motion
     ProvideBackdrop {
         Box(Modifier.fillMaxSize()) {
@@ -129,5 +140,8 @@ internal fun MainShell(top: NavBackStackEntry, nav: AppNavigator, content: @Comp
     val snapshot by LocalAppRepository.current.state.collectAsState()
     val tab = top.destination.tab
     val visible = tab != null && snapshot.stage == Stage.Live && !top.plataDestination.hidesTabBar
-    TabShell(if (visible) tab else null, snapshot.tabBarData, nav::switchTab, content)
+    // the nav host insets each tab page itself (LocalTabBarInset), so hiding the bar doesn't move the page under a push
+    CompositionLocalProvider(LocalTabBarInset provides if (snapshot.stage == Stage.Live) TabBarRowHeight else 0.dp) {
+        TabShell(if (visible) tab else null, snapshot.tabBarData, nav::switchTab, insetContent = false, content = content)
+    }
 }

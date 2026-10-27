@@ -1,8 +1,17 @@
 package tech.bashga.plata.navigation
 
+import androidx.compose.animation.DeferredAnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.DeferredTransitionState
+import androidx.compose.animation.core.ExperimentalDeferredTransitionApi
+import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -30,7 +40,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -46,13 +59,18 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlin.time.TimeSource
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import tech.bashga.plata.designsystem.components.PageSheetBackdrop
 import tech.bashga.plata.designsystem.components.PageSheetSurface
 import tech.bashga.plata.designsystem.components.PageSheetTop
 import tech.bashga.plata.designsystem.components.SheetPresenter
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
+import tech.bashga.plata.designsystem.foundation.LocalSharedTransitionScope
+import tech.bashga.plata.designsystem.foundation.LocalSharedVisibilityScope
+import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.ProvideBackdrop
+import tech.bashga.plata.designsystem.foundation.ProvideSafeArea
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /** A run of back-stack entries drawn together: the base screen, or a sheet or cover with what was pushed inside it. */
@@ -106,6 +124,7 @@ fun PlataNavHost(
     val inTransition by navigator.transitionsInProgress.collectAsState()
     val topEntry = backStack.lastOrNull()
     val gesture = remember { BackGesture() }
+    val edgeReach = rememberEdgeReach()
     if (LocalNavigationEventDispatcherOwner.current != null) {
         val backState = rememberNavigationEventState(NavigationEventInfo.None)
         val scope = rememberCoroutineScope()
@@ -118,21 +137,43 @@ fun PlataNavHost(
         }
         NavigationBackHandler(
             backState,
-            isBackEnabled = backStack.size > 1,
+            // still listening while a gesture that already popped runs out, or its end never arrives and the next one is lost
+            isBackEnabled = backStack.size > 1 || gesture.early,
             onBackCancelled = {
-                // UIKit's edge pan cancels on a slow release past halfway, where UINavigationController would still pop
-                if (style == BackStyle.Ios && gesture.entry != null && gesture.shouldCommit()) {
-                    gesture.release()
-                    controller.popBackStack()
-                } else {
-                    scope.launch { gesture.cancel() }
+                val expands = gesture.entry?.plataDestination?.expands == true
+                when {
+                    gesture.early -> gesture.endEarly()
+                    // an expanding page closes on a flick that would carry it all the way, as a pull down does
+                    expands && style == BackStyle.Ios && gesture.projected() >= edgeReach -> {
+                        gesture.release()
+                        controller.popBackStack()
+                    }
+                    // UIKit's edge pan cancels on a slow release past halfway, where UINavigationController would still pop
+                    !expands && style == BackStyle.Ios && gesture.entry != null && gesture.shouldCommit() -> {
+                        gesture.release()
+                        controller.popBackStack()
+                    }
+                    else -> scope.launch { gesture.cancel() }
                 }
             },
             onBackCompleted = {
-                gesture.release()
-                controller.popBackStack()
+                if (gesture.early) {
+                    gesture.endEarly()
+                } else {
+                    gesture.release()
+                    controller.popBackStack()
+                }
             },
         )
+        // an expanding page shrunk all the way lets go into its card while the finger is still down
+        LaunchedEffect(gesture, edgeReach) {
+            snapshotFlow { gesture.entry?.plataDestination?.expands == true && gesture.progress.value >= edgeReach }.collect { full ->
+                if (full) {
+                    gesture.releaseEarly()
+                    controller.popBackStack()
+                }
+            }
+        }
     }
     val reduceMotion = rememberReduceMotion()
 
@@ -157,34 +198,36 @@ fun PlataNavHost(
     val presented = { layer: Layer -> visibility.getValue(layer.key) * (1f - (drag[layer.key] ?: 0f)) }
     val baseStacked = drawn.filter { it.depth == 1 && it.presentation == Presentation.Sheet }.maxOfOrNull(presented) ?: 0f
 
-    Box(
-        modifier
-            .fillMaxSize()
-            .background(PlataTheme.colors.sheetBackdrop)
-            // a root replace fades through the page colour; under a sheet the black shows at once
-            .then(if (baseStacked == 0f) Modifier.background(PlataTheme.colors.surfaceBackground) else Modifier),
-    ) {
-        drawn.forEach { layer ->
-            key(layer.key) {
-                val above = drawn.filter { it.depth == layer.depth + 1 && it.presentation == Presentation.Sheet }
-                val stacked = above.filter { it.backdrop(layer) == PageSheetBackdrop.Stacked }.maxOfOrNull(presented) ?: 0f
-                val dimmed = above.filter { it.backdrop(layer) == PageSheetBackdrop.Dimmed }.maxOfOrNull(presented) ?: 0f
-                DisposableEffect(layer.key) { onDispose { drag -= layer.key } }
-                LayerFrame(
-                    presentation = layer.presentation,
-                    visibility = visibility.getValue(layer.key),
-                    stacked = stacked,
-                    dimmed = dimmed,
-                    covered = drawn.filter { it.depth == layer.depth + 1 }.maxOfOrNull(presented) ?: 0f,
-                    isTop = layer.top == topEntry,
-                    blocksBelow = layer.depth > 0,
-                    baseFrame = { content -> baseFrame(layer.top, content) },
-                    leaving = layer in exiting,
-                    onSheetDrag = { drag[layer.key] = it },
-                ) {
-                    val swiped = if (layer.top == topEntry && layer.entries.size > 1) gesture.takeIf { it.entry == layer.top } else null
-                    LayerContent(layer, backStack, gesture, swiped, style, reduceMotion, isTopLayer = layer.top == topEntry) { entry, isTop ->
-                        EntryContent(entry, isTop, holder, navigator, composed)
+    SharedTransitions {
+        Box(
+            modifier
+                .fillMaxSize()
+                .background(PlataTheme.colors.sheetBackdrop)
+                // a root replace fades through the page colour; under a sheet the black shows at once
+                .then(if (baseStacked == 0f) Modifier.background(PlataTheme.colors.surfaceBackground) else Modifier),
+        ) {
+            drawn.forEach { layer ->
+                key(layer.key) {
+                    val above = drawn.filter { it.depth == layer.depth + 1 && it.presentation == Presentation.Sheet }
+                    val stacked = above.filter { it.backdrop(layer) == PageSheetBackdrop.Stacked }.maxOfOrNull(presented) ?: 0f
+                    val dimmed = above.filter { it.backdrop(layer) == PageSheetBackdrop.Dimmed }.maxOfOrNull(presented) ?: 0f
+                    DisposableEffect(layer.key) { onDispose { drag -= layer.key } }
+                    LayerFrame(
+                        presentation = layer.presentation,
+                        visibility = visibility.getValue(layer.key),
+                        stacked = stacked,
+                        dimmed = dimmed,
+                        covered = drawn.filter { it.depth == layer.depth + 1 }.maxOfOrNull(presented) ?: 0f,
+                        isTop = layer.top == topEntry,
+                        blocksBelow = layer.depth > 0,
+                        baseFrame = { content -> baseFrame(layer.top, content) },
+                        leaving = layer in exiting,
+                        onSheetDrag = { drag[layer.key] = it },
+                    ) {
+                        val swiped = if (layer.top == topEntry && layer.entries.size > 1) gesture.takeIf { it.entry == layer.top } else null
+                        LayerContent(layer, backStack, gesture, swiped, style, reduceMotion, edgeReach, isTopLayer = layer.top == topEntry) { entry, isTop ->
+                            EntryContent(entry, isTop, holder, navigator, composed)
+                        }
                     }
                 }
             }
@@ -195,6 +238,14 @@ fun PlataNavHost(
     LaunchedEffect(inTransition, composed.toList()) {
         inTransition.filter { it !in backStack && it !in composed }.forEach(navigator::onTransitionComplete)
     }
+}
+
+/** [DismissReach] as back-gesture progress, which runs across the window's width. */
+@Composable
+private fun rememberEdgeReach(): Float {
+    val reach = with(LocalDensity.current) { DismissReach.toPx() }
+    val width = LocalWindowInfo.current.containerSize.width
+    return if (width > 0) reach / width else 1f
 }
 
 /** How far a predictive back may lower a sheet or cover, as a fraction of its entrance. */
@@ -233,7 +284,12 @@ private class BackGesture {
     private var frameMillis = 0L
     private var velocity = 0f
 
+    /** Set when the gesture let go of an expanding page before the finger lifted; the rest of that gesture is spent. */
+    var early by mutableStateOf(false)
+        private set
+
     suspend fun track(top: NavBackStackEntry?, event: NavigationEvent) {
+        if (early) return
         if (entry == null) {
             entry = top
             edge = event.swipeEdge
@@ -257,11 +313,23 @@ private class BackGesture {
     /** True when an iOS swipe was let go far or fast enough that the edge recogniser's cancel should be overruled. */
     fun shouldCommit() = progress.value > 0.5f || velocity > FlingCommit
 
+    /** Where a release at the current speed would carry the swipe, in progress. */
+    fun projected() = progress.value + velocity * ProjectionSeconds
+
     fun release() {
         released = entry
         releasedAt = progress.value
         releasedVelocity = velocity
         entry = null
+    }
+
+    fun releaseEarly() {
+        release()
+        early = true
+    }
+
+    fun endEarly() {
+        early = false
     }
 
     suspend fun cancel() {
@@ -343,7 +411,7 @@ internal fun LayerFrame(
 private class PushMotion(
     val front: NavBackStackEntry,
     val behind: NavBackStackEntry?,
-    from: Float,
+    val from: Float,
     val target: Float,
     val velocity: Float = 0f,
     val predictive: Float = 0f,
@@ -354,6 +422,7 @@ private class PushMotion(
     val top get() = if (target == 1f) checkNotNull(behind) else front
 }
 
+@OptIn(ExperimentalDeferredTransitionApi::class)
 @Composable
 private fun LayerContent(
     layer: Layer,
@@ -362,6 +431,7 @@ private fun LayerContent(
     swiped: BackGesture?,
     style: BackStyle,
     reduceMotion: Boolean,
+    edgeReach: Float,
     isTopLayer: Boolean,
     entryContent: @Composable (NavBackStackEntry, Boolean) -> Unit,
 ) {
@@ -372,6 +442,8 @@ private fun LayerContent(
         when {
             prev == null || shown == null || shown == layer.top || isTabSwitch(shown, layer.top) -> PushMotion(layer.top, null, 0f, 0f)
             shown !in backStack -> when {
+                // an expanding page doesn't slide: it flies into its card from wherever the drag left it
+                shown.plataDestination.expands && !reduceMotion -> PushMotion(shown, layer.top, 0f, 1f)
                 gesture.released == shown -> PushMotion(
                     shown, layer.top,
                     from = if (style == BackStyle.Ios) gesture.releasedAt else 0f,
@@ -391,43 +463,104 @@ private fun LayerContent(
         SideEffect { gesture.pushOffset = { entry -> if (pushing(entry)) motion.offset.value else 0f } }
     }
     val grabbed = swiped != null && pushing(layer.top)
+    val page = if (motion.settled) motion.top else motion.front
+    val expanding = !reduceMotion && page.plataDestination.expands
+    val dismiss = remember(page) { ExpandDismiss() }
+    SideEffect {
+        dismiss.edge = {
+            when (page) {
+                gesture.entry -> gesture.progress.value / edgeReach
+                gesture.released -> gesture.releasedAt / edgeReach
+                else -> 0f
+            }
+        }
+    }
+    val dragging by remember(dismiss) { derivedStateOf { dismiss.dragging } }
+    // shrunk under a finger, the page's pop is pending: the page under it comes in, still held where it was. A fling's
+    // swing leaves it out: bringing the page under in builds it from scratch, a stall in the frame the swing starts
+    val dismissing = expanding && motion.settled && dragging
+    // each entry's visibility, which its shared elements read as incoming or outgoing
+    val transitions = remember { mutableStateMapOf<String, Transition<Boolean>>() }
     LaunchedEffect(motion, grabbed) {
         if (motion.settled) return@LaunchedEffect
         // the swipe now drives the slide from where it caught it, like an interrupted UIKit push
         if (!grabbed) motion.offset.animateTo(motion.target, navSpring(), motion.velocity)
+        // both pages stay composed until their shared elements have landed
+        snapshotFlow { transitions.values.all { !it.isRunning && it.currentState == it.targetState } }.first { it }
         motion.settled = true
     }
+    LaunchedEffect(motion) {
+        if (expanding && motion.target == 1f && gesture.released == motion.front) dismiss.fly(gesture.releasedVelocity / edgeReach)
+    }
 
-    val swipeBehind = if (swiped != null && motion.settled && motion.top == layer.top) layer.entries[layer.entries.lastIndex - 1] else null
+    val swipeBehind = if ((swiped != null || dismissing) && motion.settled && motion.top == layer.top && layer.entries.size > 1) {
+        layer.entries[layer.entries.lastIndex - 1]
+    } else {
+        null
+    }
     val front = if (motion.settled) motion.top else motion.front
     val behind = if (motion.settled) swipeBehind else motion.behind
+    val look = when {
+        reduceMotion -> PushLook.Fade
+        expanding -> PushLook.Expand
+        style == BackStyle.Ios -> PushLook.Ios
+        else -> PushLook.Android
+    }
     val pose = when {
         !motion.settled -> PushPose(motion.offset.value, motion.predictive, motion.edge)
-        swiped == null -> PushPose(0f, 0f, NavigationEvent.EDGE_LEFT)
+        swiped == null || look == PushLook.Expand -> PushPose(0f, 0f, NavigationEvent.EDGE_LEFT)
         style == BackStyle.Ios -> PushPose(swiped.progress.value, 0f, swiped.edge)
         else -> PushPose(0f, PredictiveEasing.transform(swiped.progress.value), swiped.edge)
     }
-    val look = if (reduceMotion) PushLook.Fade else if (style == BackStyle.Ios) PushLook.Ios else PushLook.Android
 
     Box(Modifier.fillMaxSize()) {
         listOfNotNull(behind, front).forEach { entry ->
             key(entry.id) {
                 val isFront = entry == front && behind != null
                 val isBehind = entry == behind
+                // only the top of an expanding pair is shown; the other is there for the card they share
+                val shown = !expanding || entry == layer.top
+                // a newly pushed page starts hidden so an expanding push can grow it out of the card it shares
+                val state = remember { DeferredTransitionState((entry != layer.top || motion.settled) && shown) }
+                when {
+                    shown != state.targetState -> state.animateTo(shown)
+                    dismissing && entry == front -> state.defer(false)
+                    dismissing && entry == behind -> state.defer(true)
+                    !dismissing && state.pendingTargetState != null -> state.defer(state.targetState)
+                }
+                val transition = rememberTransition(state, label = "entry")
+                DisposableEffect(transition) {
+                    transitions[entry.id] = transition
+                    onDispose { transitions -= entry.id }
+                }
                 Box(
                     Modifier
                         .fillMaxSize()
                         .then(if (isFront) Modifier.pushFront(pose, look) else if (isBehind) Modifier.pushBehind(pose, look) else Modifier)
-                        .background(PlataTheme.colors.surfaceBackground),
+                        // the expanding page brings its own page colour inside the bounds it grows through
+                        .then(if (isFront && look == PushLook.Expand) Modifier else Modifier.background(PlataTheme.colors.surfaceBackground)),
                 ) {
-                    ProvideBackdrop { entryContent(entry, isTopLayer && entry == layer.top && entry == front) }
+                    transition.DeferredAnimatedVisibility({ it }, enter = EnterTransition.None, exit = ExitTransition.None) {
+                        CompositionLocalProvider(
+                            LocalSharedVisibilityScope provides this,
+                            LocalExpandDismiss provides if (expanding && entry == page) dismiss else null,
+                        ) {
+                            ProvideBackdrop { entryContent(entry, isTopLayer && entry == layer.top && entry == front) }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-private enum class PushLook { Ios, Android, Fade }
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+private fun SharedTransitions(content: @Composable () -> Unit) = SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this, content = content)
+}
+
+private enum class PushLook { Ios, Android, Fade, Expand }
 
 /** Where a push or pop is: [offset] 0–1 how far the front screen has gone, [predictive] 0–1 its back-gesture shrink. */
 private class PushPose(val offset: Float, val predictive: Float, val edge: Int)
@@ -440,6 +573,8 @@ private fun Modifier.pushFront(pose: PushPose, look: PushLook): Modifier {
     val shadowWidth = PlataTheme.spacing.s16
     return when (look) {
         PushLook.Fade -> graphicsLayer { alpha = 1f - pose.offset }
+        // the page moves itself (expandingPage): it shrinks under a drag and travels in the shared transition overlay
+        PushLook.Expand -> this
         PushLook.Ios -> this
             .graphicsLayer { translationX = pose.offset * size.width }
             // shaped like the screen so the edge shadow rounds its corners; top, bottom and right fall off screen
@@ -475,6 +610,16 @@ private fun Modifier.pushBehind(pose: PushPose, look: PushLook): Modifier {
     val shade = PlataTheme.colors.sheetBackdrop
     return when (look) {
         PushLook.Fade -> this
+        // the page under an expanding card blurs and dims as the card grows over it, like the App Store's Today feed
+        PushLook.Expand -> this
+            .graphicsLayer {
+                val radius = ExpandBlur.toPx() * (1f - pose.offset)
+                renderEffect = if (radius > 0f) BlurEffect(radius, radius) else null
+            }
+            .drawWithContent {
+                drawContent()
+                drawRect(shade.copy(alpha = ExpandDim * (1f - pose.offset)))
+            }
         PushLook.Ios -> this
             .graphicsLayer { translationX = -0.3f * size.width * (1f - pose.offset) }
             .drawWithContent {
@@ -492,6 +637,9 @@ private fun Modifier.pushBehind(pose: PushPose, look: PushLook): Modifier {
         }
     }
 }
+
+private const val ExpandDim = 0.2f
+private val ExpandBlur = 12.dp
 
 private fun isTabSwitch(from: NavBackStackEntry, to: NavBackStackEntry): Boolean {
     val a = from.destination.tab
@@ -514,8 +662,13 @@ private fun EntryContent(
             if (entry in navigator.transitionsInProgress.value && entry !in navigator.backStack.value) navigator.onTransitionComplete(entry)
         }
     }
+    // per entry, so a route that hides the bar doesn't shorten the tab page it is pushed over
+    val tabBarInset = if (entry.destination.tab != null && !entry.plataDestination.hidesTabBar) LocalTabBarInset.current else 0.dp
+    val safeArea = PlataSafeArea.current
     entry.LocalOwnersProvider(holder) {
-        CompositionLocalProvider(LocalIsTopEntry provides isTop) { entry.plataDestination.content(entry) }
+        ProvideSafeArea(safeArea.copy(bottom = safeArea.bottom + tabBarInset)) {
+            CompositionLocalProvider(LocalIsTopEntry provides isTop) { entry.plataDestination.content(entry) }
+        }
     }
 }
 

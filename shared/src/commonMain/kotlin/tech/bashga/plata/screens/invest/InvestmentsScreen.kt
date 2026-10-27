@@ -76,9 +76,13 @@ import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.backdropBlur
 import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.PressScaleState
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
+import tech.bashga.plata.navigation.LocalIsTopEntry
 import tech.bashga.plata.navigation.Overlay
+import tech.bashga.plata.navigation.expandingCard
+import tech.bashga.plata.navigation.launchExpandingPage
 
 enum class Movers { Gainers, Losers }
 
@@ -174,7 +178,10 @@ fun InvestmentsScreen(
     val repository = LocalAppRepository.current
     val viewModel = viewModel { InvestmentsViewModel(repository) }
     val state by viewModel.state.collectAsState()
-    InvestmentsContent(state, onAction = { action ->
+    // covered, the feed holds still: an idea it opens adds its fund to Recents, which would shift it under the transition
+    val shown = remember { arrayOf(state) }
+    if (LocalIsTopEntry.current) shown[0] = state
+    InvestmentsContent(shown[0], onAction = { action ->
         when (action) {
             InvestmentsAction.OpenSearch -> onSearch()
             InvestmentsAction.OpenAccount -> onOpenAccount()
@@ -361,13 +368,18 @@ private fun InvestmentsFeed(state: InvestmentsState, onAction: (InvestmentsActio
     Column(Modifier.testTag("investment-ideas"), verticalArrangement = Arrangement.spacedBy(cardGap)) {
         SectionHeader("Investment ideas", Modifier.fillMaxWidth(), trailing = { SectionCardAction("See all", {}) })
         InvestIdeas.all.forEach { idea ->
+            val press = remember { PressScaleState() }
             IdeaCard(
                 idea.title,
                 painterResource(idea.cardImage),
                 formatPercent(idea.cardTrend),
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().expandingCard(ideaCardKey(idea.id)),
                 logo = { BrandLogo(painterResource(idea.fund.logo), BrandLogoSize.S56) },
-                onClick = { onAction(InvestmentsAction.OpenIdea(idea.id)) },
+                pressState = press,
+                onClick = {
+                    launchExpandingPage(press.value)
+                    onAction(InvestmentsAction.OpenIdea(idea.id))
+                },
             )
         }
     }
