@@ -21,6 +21,7 @@ import androidx.compose.ui.viewinterop.UIKitInteropInteractionMode
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import kotlin.math.roundToInt
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.cValue
@@ -147,7 +148,7 @@ private fun Painter.toTemplateImage(size: Dp, density: Density): UIImage {
 }
 
 /** The Invite item has no icon: its value is the image, behind the flame for [TabBarItemKind.IconValue]. */
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private fun textImage(text: String, glyph: UIImage?): UIImage {
     val attributes = mapOf<Any?, Any?>(NSFontAttributeName to UIFont.systemFontOfSize(InviteTextSize, UIFontWeightSemibold))
     val string = NSString.create(string = text)
