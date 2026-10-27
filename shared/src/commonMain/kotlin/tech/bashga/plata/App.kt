@@ -9,7 +9,9 @@ import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.data.KeyValueStore
 import tech.bashga.plata.data.rememberKeyValueStore
 import tech.bashga.plata.designsystem.foundation.CardMotion
+import tech.bashga.plata.designsystem.foundation.ProvideSafeArea
 import tech.bashga.plata.designsystem.foundation.ProvideWindowSafeArea
+import tech.bashga.plata.designsystem.foundation.SafeAreaInsets
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.dev.dials.DialRoot
 import tech.bashga.plata.dev.isDebugBuild
@@ -20,10 +22,11 @@ private class AppRepositoryHolder(store: KeyValueStore) : ViewModel() {
     val repository = AppRepository(store, viewModelScope).also { it.coldLaunch() }
 }
 
+/** The app; [safeArea] stands in for the window's insets where it has none, as in the desktop window. */
 @Composable
-fun App() {
+fun App(safeArea: SafeAreaInsets? = null) {
     PlataTheme {
-        ProvideWindowSafeArea {
+        ProvideSafeAreaOrWindow(safeArea) {
             val store = rememberKeyValueStore()
             val repository = viewModel { AppRepositoryHolder(store) }.repository
             if (isDebugBuild()) {
@@ -36,3 +39,7 @@ fun App() {
         }
     }
 }
+
+@Composable
+private fun ProvideSafeAreaOrWindow(insets: SafeAreaInsets?, content: @Composable () -> Unit) =
+    if (insets != null) ProvideSafeArea(insets, content) else ProvideWindowSafeArea(content)

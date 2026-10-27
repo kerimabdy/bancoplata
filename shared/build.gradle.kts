@@ -1,3 +1,4 @@
+import org.jetbrains.compose.reload.gradle.ComposeHotRun
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -19,6 +20,9 @@ kotlin {
             isStatic = true
         }
     }
+
+    // a desktop window of the app, for Compose Hot Reload (`./gradlew :shared:hotRunJvm`); it never ships
+    jvm()
 
     android {
        namespace = "tech.bashga.plata.shared"
@@ -54,6 +58,10 @@ kotlin {
             implementation(libs.navigationevent.compose)
             implementation(libs.kotlinx.serialization.json)
         }
+        jvmMain.dependencies {
+            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutines.swing)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
@@ -86,4 +94,18 @@ tasks.withType<Test>().configureEach {
 
 dependencies {
     androidRuntimeClasspath(libs.compose.uiTooling)
+}
+
+// Skia loads its native library itself; JDK 25 warns about that unless native access is granted
+val desktopJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+
+compose.desktop {
+    application {
+        mainClass = "tech.bashga.plata.MainKt"
+        jvmArgs += desktopJvmArgs
+    }
+}
+
+tasks.withType<ComposeHotRun>().configureEach {
+    jvmArgs(desktopJvmArgs)
 }
