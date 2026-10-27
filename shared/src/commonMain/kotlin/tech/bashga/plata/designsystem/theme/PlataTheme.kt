@@ -25,7 +25,7 @@ fun PlataTheme(content: @Composable () -> Unit) {
         LocalPlataTypography provides PlataTypography(),
         LocalPlataSpacing provides PlataSpacing(),
         LocalPlataSizes provides PlataSizes(),
-        LocalPlataRadii provides PlataRadii(),
+        LocalPlataRadii provides PlataRadii().let { it.copy(device = screenCornerRadius() ?: it.device) },
         LocalPlataShadows provides PlataShadows(),
         LocalPlataGradients provides PlataGradients(),
         LocalIndication provides PlataPressIndication,

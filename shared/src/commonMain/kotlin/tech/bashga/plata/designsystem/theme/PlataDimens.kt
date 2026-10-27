@@ -55,7 +55,10 @@ data class PlataRadii(
     val xl: Dp = 20.dp,
     val xxl: Dp = 32.dp,
     val sheet: Dp = 40.dp,
-    /** The iPhone 15/16 Pro display corner, where a presenter's card starts before a Stacked sheet shrinks it. */
+    /**
+     * The display's corner: pages that shrink or grow off the screen round to it, so they meet the glass. 55 is the
+     * iPhone 15/16 Pro's; PlataTheme puts in the platform's own where it reports one.
+     */
     val device: Dp = 55.dp,
     val full: Dp = 9999.dp,
 )
