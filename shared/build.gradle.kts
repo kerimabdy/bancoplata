@@ -57,6 +57,7 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.navigationevent.compose)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.datetime)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)

@@ -22,7 +22,7 @@ import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.foundation.pressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
-/** [Track]: equal segments in a grey capsule with a white thumb. [Plain]: a chart range picker, the selection a white disc. */
+/** [Track]: equal segments in a grey capsule with a white thumb. [Plain]: a chart range picker, the selection a white disc; `equalWidths` splits the full width evenly. */
 enum class SegmentedControlStyle { Track, Plain }
 
 @Composable
@@ -32,6 +32,7 @@ fun SegmentedControl(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
     style: SegmentedControlStyle = SegmentedControlStyle.Track,
+    equalWidths: Boolean = false,
 ) {
     val colors = PlataTheme.colors
     val typography = PlataTheme.typography
@@ -60,19 +61,19 @@ fun SegmentedControl(
         // 13 semibold in 40-wide cells 20 apart, longer labels padded 10; the selection disc is 35 across (341fcc04)
         SegmentedControlStyle.Plain -> Row(
             modifier.height(PlataTheme.sizes.buttonSmall),
-            horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s20),
+            horizontalArrangement = if (equalWidths) Arrangement.Start else Arrangement.spacedBy(PlataTheme.spacing.s20),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             segments.forEachIndexed { index, segment ->
                 Box(
-                    Modifier
-                        .widthIn(min = PlataTheme.sizes.buttonSmall)
+                    (if (equalWidths) Modifier.weight(1f) else Modifier.widthIn(min = PlataTheme.sizes.buttonSmall))
                         .fillMaxHeight()
                         .pressable(role = Role.Tab) { onSelect(index) },
                     contentAlignment = Alignment.Center,
                 ) {
                     if (index == selectedIndex) Box(Modifier.size(35.dp).background(colors.surfaceCard, CircleShape))
-                    PlataText(segment, typography.footnoteStrong, colors.textPrimary, Modifier.padding(horizontal = 10.dp), maxLines = 1)
+                    // no padding when equal: "All time" (~47 dp) must fit a sixth of a 343 dp row (~57 dp)
+                    PlataText(segment, typography.footnoteStrong, colors.textPrimary, if (equalWidths) Modifier else Modifier.padding(horizontal = 10.dp), maxLines = 1)
                 }
             }
         }
