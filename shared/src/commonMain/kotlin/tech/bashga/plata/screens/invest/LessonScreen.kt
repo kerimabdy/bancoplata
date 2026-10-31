@@ -2,17 +2,21 @@ package tech.bashga.plata.screens.invest
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,9 +69,11 @@ import tech.bashga.plata.designsystem.components.NavigationBarStyle
 import tech.bashga.plata.designsystem.components.ProgressBar
 import tech.bashga.plata.designsystem.components.ProgressBarSize
 import tech.bashga.plata.designsystem.components.TextButton
+import tech.bashga.plata.designsystem.components.rememberCollapsed
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
+import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.navigation.PlataBackHandler
@@ -270,36 +276,59 @@ private val PageTitleTop = 34.dp
 private val ProgressWidth = 140.dp
 private val ParagraphGap = 10.dp
 
+// NavigationBar's status band stops 5 short of the safe area
+private val StatusBarOverlap = 5.dp
+
 @Composable
 private fun LessonContentPageView(page: LessonContentPage, progress: Float, onAction: (LessonAction) -> Unit) {
     val spacing = PlataTheme.spacing
-    Column(Modifier.fillMaxSize().padding(bottom = PlataSafeArea.current.bottom + spacing.s20)) {
+    val safeArea = PlataSafeArea.current
+    // a scroll state per page, so each page opens at its top
+    val scroll = remember(page) { ScrollState(0) }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // at least a screen tall, so a short page still puts the button at the bottom
+        Column(
+            Modifier
+                .fillMaxSize()
+                .backdropSource()
+                .verticalScroll(scroll)
+                .heightIn(min = maxHeight)
+                .padding(
+                    start = spacing.screenMargin,
+                    top = safeArea.top - StatusBarOverlap + PlataTheme.sizes.nav,
+                    end = spacing.screenMargin,
+                    bottom = safeArea.bottom + spacing.s20,
+                ),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column {
+                Spacer(Modifier.height(MediaTop))
+                Image(
+                    painterResource(page.media),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(MediaHeight).clip(ContinuousRoundedShape(PlataTheme.radii.xl)),
+                    contentScale = ContentScale.Crop,
+                )
+                Spacer(Modifier.height(PageTitleTop))
+                HeadlineBlock(page.title, Modifier.fillMaxWidth(), size = HeadlineBlockSize.Medium)
+                Spacer(Modifier.height(spacing.s16))
+                Column(verticalArrangement = Arrangement.spacedBy(ParagraphGap)) {
+                    page.paragraphs.forEach {
+                        PlataText(it, PlataTheme.typography.bodyRelaxed, PlataTheme.colors.textPrimary, Modifier.fillMaxWidth())
+                    }
+                }
+                Spacer(Modifier.height(spacing.s20))
+            }
+            Button("Next", { onAction(LessonAction.Next) }, Modifier.fillMaxWidth())
+        }
         NavigationBar(
             style = NavigationBarStyle.Progress,
             includeStatusBar = true,
             onBack = { onAction(LessonAction.Back) },
             center = { ProgressBar(progress, Modifier.width(ProgressWidth), size = ProgressBarSize.Nav) },
             trailing = { TextButton("Close", { onAction(LessonAction.Close) }) },
+            collapsed = rememberCollapsed(scroll),
         )
-        Column(Modifier.weight(1f).padding(horizontal = spacing.screenMargin)) {
-            Spacer(Modifier.height(MediaTop))
-            Image(
-                painterResource(page.media),
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(MediaHeight).clip(ContinuousRoundedShape(PlataTheme.radii.xl)),
-                contentScale = ContentScale.Crop,
-            )
-            Spacer(Modifier.height(PageTitleTop))
-            HeadlineBlock(page.title, Modifier.fillMaxWidth(), size = HeadlineBlockSize.Medium)
-            Spacer(Modifier.height(spacing.s16))
-            Column(verticalArrangement = Arrangement.spacedBy(ParagraphGap)) {
-                page.paragraphs.forEach {
-                    PlataText(it, PlataTheme.typography.bodyRelaxed, PlataTheme.colors.textPrimary, Modifier.fillMaxWidth())
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            Button("Next", { onAction(LessonAction.Next) }, Modifier.fillMaxWidth())
-        }
     }
 }
 
