@@ -19,7 +19,8 @@ import tech.bashga.plata.designsystem.components.ButtonWhiteLargePreview
 class ButtonScreenshots : ScreenshotTest() {
     @Test fun primaryLarge() = component("button/style=primary,size=large,state=default") { ButtonPrimaryLargePreview() }
 
-    @Test fun primaryLargeLoading() = component("button/style=primary,size=large,state=loading") { ButtonPrimaryLargeLoadingPreview() }
+    // the spinner turns forever, so the clock is paused at a fixed frame instead of idling
+    @Test fun primaryLargeLoading() = component("button/style=primary,size=large,state=loading", clockMillis = 0) { ButtonPrimaryLargeLoadingPreview() }
 
     @Test fun primaryMedium() = component("button/style=primary,size=medium,state=default", background = { it.surfaceCard }) {
         ButtonPrimaryMediumPreview()

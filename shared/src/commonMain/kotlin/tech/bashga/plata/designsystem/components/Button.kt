@@ -1,17 +1,26 @@
 package tech.bashga.plata.designsystem.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -67,7 +76,7 @@ private fun ButtonSize.metrics(style: ButtonStyle): ButtonMetrics {
 
 /**
  * Filled button. Width is the caller's: pass `Modifier.fillMaxWidth()` in cards and footers, leave it to hug for
- * standalone actions. [loading] swaps the label for the white spinner and disables the tap.
+ * standalone actions. [loading] covers the label with a spinner in the label colour and disables the tap.
  * [contentPadding] replaces the size's side padding (the 46-high "Select the closest slot" on eb4cdf05 pads 10/12).
  */
 @Composable
@@ -97,8 +106,7 @@ fun Button(
         ButtonStyle.Destructive -> colors.surfaceCard to colors.textDestructive
     }
     val shape = ContinuousRoundedShape(metrics.radius)
-    val showIcon = icon != null && !loading
-    Row(
+    Box(
         modifier
             .alpha(if (enabled) 1f else 0.3f)
             .pressScale(enabled = enabled && !loading)
@@ -106,18 +114,34 @@ fun Button(
             .height(metrics.height)
             .background(fill, shape)
             .semantics { if (loading) contentDescription = label }
-            .padding(contentPadding ?: PaddingValues(start = if (showIcon) metrics.startWithIcon else metrics.start, end = metrics.end)),
-        horizontalArrangement = Arrangement.spacedBy(metrics.gap, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(contentPadding ?: PaddingValues(start = if (icon != null) metrics.startWithIcon else metrics.start, end = metrics.end)),
+        contentAlignment = Alignment.Center,
     ) {
-        if (loading) {
-            // the source spinner (7464b63b) is a 26pt ring; the 24-grid glyph's ring is 19.8 of its box
-            Icon(PlataIcons.Spinner, size = 31.dp, tint = colors.textOnDark)
-        } else {
+        // the label stays laid out under the spinner so a hugging button keeps its width while loading
+        Row(
+            Modifier.alpha(if (loading) 0f else 1f),
+            horizontalArrangement = Arrangement.spacedBy(metrics.gap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             if (icon != null) Icon(icon, size = iconSize ?: metrics.icon, tint = ink)
             PlataText(label, labelStyle ?: metrics.label, ink, maxLines = 1)
         }
+        if (loading) {
+            // the source spinner (7464b63b) is a 26pt ring; the 24-grid glyph's ring is 19.8 of its box
+            ButtonSpinner(if (size == ButtonSize.Large) 31.dp else metrics.icon * 24f / 19.8f, ink)
+        }
     }
+}
+
+@Composable
+private fun ButtonSpinner(size: Dp, tint: Color) {
+    val turn by rememberInfiniteTransition(label = "spinner").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(durationMillis = 800, easing = LinearEasing), RepeatMode.Restart),
+        label = "spinner turn",
+    )
+    Icon(PlataIcons.Spinner, Modifier.graphicsLayer { rotationZ = turn }, size = size, tint = tint)
 }
 
 @Preview
