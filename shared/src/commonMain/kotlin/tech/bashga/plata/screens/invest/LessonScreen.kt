@@ -341,7 +341,8 @@ private fun LessonComplete(lesson: Lesson, onAction: (LessonAction) -> Unit) {
 
 private const val ConfettiSeed = 48_490_884
 private const val ConfettiCount = 90
-private const val ConfettiMillis = 4_000L
+// in screen heights: past the bottom edge by more than the largest rotated piece
+private const val ConfettiExit = 1.1f
 
 private class ConfettiPiece(random: Random) {
     val x = random.nextFloat()
@@ -355,6 +356,7 @@ private class ConfettiPiece(random: Random) {
     val size = 4f + random.nextFloat() * 6f
     val shape = random.nextInt(4)
     val tone = random.nextInt(3)
+    val exitMillis = ((ConfettiExit - y) / fall * 1000).toLong()
 }
 
 /** A seeded burst of falling confetti; the same clock time always draws the same frame. */
@@ -363,16 +365,19 @@ private fun Confetti(modifier: Modifier = Modifier) {
     val colors = PlataTheme.colors
     val tones = listOf(colors.brandPrimary, colors.orbViolet, colors.surfaceMethodOrange)
     val pieces = remember { Random(ConfettiSeed).let { r -> List(ConfettiCount) { ConfettiPiece(r) } } }
+    val endMillis = remember(pieces) { pieces.maxOf { it.exitMillis } }
     var elapsed by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         val start = withFrameMillis { it }
-        while (elapsed < ConfettiMillis) withFrameMillis { elapsed = it - start }
+        while (elapsed < endMillis) withFrameMillis { elapsed = it - start }
     }
     Canvas(modifier) {
         val t = elapsed / 1000f
+        // the widest piece (a 20-long strip) reaches 10 from its centre at any angle
+        val margin = 10.dp.toPx()
         pieces.forEach { p ->
             val y = (p.y + p.fall * t) * size.height
-            if (y < -20f || y > size.height + 20f) return@forEach
+            if (y < -margin || y > size.height + margin) return@forEach
             val x = (p.x + p.sway * sin(p.phase + p.swayRate * t)) * size.width
             val s = p.size.dp.toPx()
             val color: Color = tones[p.tone]
