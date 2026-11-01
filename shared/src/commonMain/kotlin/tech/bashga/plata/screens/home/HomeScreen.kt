@@ -21,7 +21,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -62,19 +64,20 @@ import tech.bashga.plata.designsystem.components.DialogCloseTone
 import tech.bashga.plata.designsystem.components.DialogPlacement
 import tech.bashga.plata.designsystem.components.DialogSecondaryAction
 import tech.bashga.plata.designsystem.components.GreetingHeader
+import tech.bashga.plata.designsystem.components.HeroWave
 import tech.bashga.plata.designsystem.components.IconCircle
 import tech.bashga.plata.designsystem.components.IconCircleSize
 import tech.bashga.plata.designsystem.components.IconCircleTone
+import tech.bashga.plata.designsystem.components.IconButton
+import tech.bashga.plata.designsystem.components.IconButtonStyle
 import tech.bashga.plata.designsystem.components.ListRow
 import tech.bashga.plata.designsystem.components.NavigationBar
 import tech.bashga.plata.designsystem.components.PromoCard
 import tech.bashga.plata.designsystem.components.PromoCardLayout
-import tech.bashga.plata.designsystem.components.PromoHeadline
 import tech.bashga.plata.designsystem.components.SectionCard
 import tech.bashga.plata.designsystem.components.SectionCardAction
 import tech.bashga.plata.designsystem.components.ShortcutTile
 import tech.bashga.plata.designsystem.components.ShortcutTileGlyphRow
-import tech.bashga.plata.designsystem.components.ShortcutTitleTone
 import tech.bashga.plata.designsystem.components.SpendOrb
 import tech.bashga.plata.designsystem.components.SpendOrbState
 import tech.bashga.plata.designsystem.components.SummaryCard
@@ -89,6 +92,7 @@ import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.navigation.LocalIsTopEntry
 import tech.bashga.plata.navigation.Overlay
+import tech.bashga.plata.screens.home.money.cashbackEarned
 import tech.bashga.plata.screens.home.money.creditStatus
 import tech.bashga.plata.screens.home.money.homeLabel
 
@@ -111,6 +115,7 @@ data class HomeState(
     val msiVisited: Boolean = false,
     val available: Long = 3_500_00,
     val spent: Long = 0,
+    val cashbackEarned: Long = 0,
     val month: Month = Month.June,
     val overlay: HomeOverlay? = null,
 )
@@ -169,6 +174,7 @@ fun homeState(snapshot: AppSnapshot, local: HomeLocal): HomeState {
         msiVisited = snapshot.homeTiles.msiVisited,
         available = snapshot.creditAvailable,
         spent = snapshot.spent(),
+        cashbackEarned = snapshot.cashbackEarned(),
         month = snapshot.month,
         overlay = HomeOverlay.DeliveryArranged.takeIf { coming != null && snapshot.deliveryArrangedPending }
             ?: HomeOverlay.AmbassadorFeedback.takeIf { feedback },
@@ -229,11 +235,14 @@ fun HomeScreen(
     })
 }
 
-// 9f1aa9fc: avatar at y 104, headline box at 208.5, shortcut tiles at 316.3, cards 20 apart
+// 9f1aa9fc: avatar at y 104, shortcut tiles 17 apart, cards 20 apart
 private val GreetingTop = 45.dp
-private val GreetingToHeadline = 48.5.dp
-private val HeadlineToTiles = 36.dp
+private val GreetingToTiles = 32.dp
 private val ShortcutGap = 17.dp
+// the hero wave runs this far past the Transactions card, fading out behind the credit card's top
+private val HeroOverhang = 96.dp
+// the source never shows the physical card's number; the brand render's
+private const val PhysicalCardDigits = "6994"
 // ec4a6b30: avatar at y 110, title box at 208.5, card at 314
 private val ComingGreetingTop = 51.dp
 private val ComingGreetingToTitle = 43.5.dp
@@ -295,57 +304,71 @@ private fun CardComingFeed(stage: HomeStage.CardComing, onAction: (HomeAction) -
 @Composable
 private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
     val spacing = PlataTheme.spacing
-    Spacer(Modifier.height(PlataSafeArea.current.top + GreetingTop))
-    GreetingHeader(
-        CustomerName,
-        "Welcome to Plata",
-        Modifier.padding(horizontal = spacing.s40).pressable(onClickLabel = "Profile") { onAction(HomeAction.OpenProfile) },
-        avatarImage = state.avatar.painter(),
-        sparkle = state.avatarIsNew,
-    )
-    Spacer(Modifier.height(GreetingToHeadline))
-    PromoHeadline("Use your card", Modifier.padding(horizontal = spacing.s40), line2 = "to get cashback", onClick = { onAction(HomeAction.OpenCashback) })
-    Spacer(Modifier.height(HeadlineToTiles))
-    Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
-            val cashback = { onAction(HomeAction.OpenCashback) }
-            if (state.cashback.isEmpty()) {
-                ShortcutTile(
-                    "Choose",
-                    Modifier.weight(1f),
-                    titleTone = ShortcutTitleTone.Primary,
-                    titleSecondLine = "cashback",
-                    badge = "3",
-                    onClick = cashback,
-                )
-            } else {
-                ShortcutTile("Cashback", Modifier.weight(1f), onClick = cashback) {
-                    ShortcutTileGlyphRow(CashbackCategory.entries.filter { it in state.cashback }.mapNotNull { it.glyph })
+    val openProfile = { onAction(HomeAction.OpenProfile) }
+    Box {
+        HeroWave(Modifier.matchParentSize().extendBelow(HeroOverhang))
+        Column(Modifier.padding(bottom = spacing.cardGap)) {
+            Spacer(Modifier.height(PlataSafeArea.current.top + GreetingTop))
+            GreetingHeader(
+                CustomerName,
+                "Welcome to Plata",
+                Modifier.fillMaxWidth().padding(horizontal = spacing.s40).pressable(onClickLabel = "Profile", onClick = openProfile),
+                avatarImage = state.avatar.painter(),
+                sparkle = state.avatarIsNew,
+                onDark = true,
+                trailing = { IconButton(PlataIcons.ChevronDown, openProfile, style = IconButtonStyle.Glass, contentDescription = "Profile") },
+            )
+            Spacer(Modifier.height(GreetingToTiles))
+            Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
+                    val cashback = { onAction(HomeAction.OpenCashback) }
+                    if (state.cashback.isEmpty()) {
+                        ShortcutTile(
+                            "Choose",
+                            Modifier.weight(1f),
+                            titleSecondLine = "cashback",
+                            badge = "3",
+                            glass = true,
+                            onClick = cashback,
+                        )
+                    } else {
+                        ShortcutTile(formatMoney(state.cashbackEarned), Modifier.weight(1f), eyebrow = "Cashback earned", glass = true, onClick = cashback) {
+                            ShortcutTileGlyphRow(
+                                CashbackCategory.entries.filter { it in state.cashback }.mapNotNull { it.glyph },
+                                tint = PlataTheme.colors.textOnDark,
+                            )
+                        }
+                    }
+                    ShortcutTile(
+                        "MSI",
+                        Modifier.weight(1f),
+                        titleIcon = PlataIcons.Msi,
+                        subtitle = if (state.msiVisited) "109 partners" else "None to defer",
+                        badge = if (state.msiVisited) null else "1",
+                        glass = true,
+                        onClick = { onAction(HomeAction.OpenMsi) },
+                    )
+                }
+                SummaryCard(
+                    "Transactions",
+                    subtitle = spentLabel(state.spent, state.month),
+                    onClick = { onAction(HomeAction.OpenTransactions) },
+                    glass = true,
+                ) {
+                    SpendOrb(if (state.spent > 0) SpendOrbState.Active else SpendOrbState.Empty)
                 }
             }
-            ShortcutTile(
-                "MSI",
-                Modifier.weight(1f),
-                titleTone = ShortcutTitleTone.Primary,
-                titleIcon = PlataIcons.Msi,
-                subtitle = if (state.msiVisited) "109 partners" else "None to defer",
-                badge = if (state.msiVisited) null else "1",
-                onClick = { onAction(HomeAction.OpenMsi) },
-            )
         }
-        SummaryCard("Transactions", subtitle = spentLabel(state.spent, state.month), onClick = { onAction(HomeAction.OpenTransactions) }) {
-            SpendOrb(if (state.spent > 0) SpendOrbState.Active else SpendOrbState.Empty)
-        }
+    }
+    Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
         CreditSummaryCard(
             formatMoney(state.available),
             "Available in Plata Crédito",
             Modifier.pressable(onClickLabel = "Plata Crédito") { onAction(HomeAction.OpenCredit) },
             status = state.month.creditStatus.homeLabel,
-            onRowAction = { onAction(HomeAction.OpenPaymentDates) },
+            rowLabel = null,
         ) {
-            CardThumb(CardThumbKind.Physical, onClick = { onAction(HomeAction.OpenCard(CardId.Physical)) })
-            CardThumb(CardThumbKind.Digital, onClick = { onAction(HomeAction.OpenCard(CardId.Digital)) })
-            CardThumb(CardThumbKind.Add, onClick = { onAction(HomeAction.AddCard) })
+            CardThumb(CardThumbKind.Physical, number = PhysicalCardDigits, onClick = { onAction(HomeAction.OpenCard(CardId.Physical)) })
         }
         val reward = if (state.month.inviteOffer == InviteOffer.Standard) "$200" else "$3,000"
         PromoCard(
@@ -361,6 +384,13 @@ private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
             )
         }
     }
+}
+
+// lets the hero draw past the block it backs without taking layout space
+private fun Modifier.extendBelow(extra: Dp): Modifier = layout { measurable, constraints ->
+    val height = constraints.maxHeight + extra.roundToPx()
+    val placeable = measurable.measure(constraints.copy(minHeight = height, maxHeight = height))
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, 0) }
 }
 
 @Composable

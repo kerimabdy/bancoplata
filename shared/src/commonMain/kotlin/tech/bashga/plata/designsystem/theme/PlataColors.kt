@@ -46,6 +46,9 @@ data class PlataColors(
     /** Glass over media: IconButton glass (white 30%), Pill glass (black 30%). */
     val glassLight: Color = PlataPalette.White.copy(alpha = 0.3f),
     val glassDark: Color = PlataPalette.Black.copy(alpha = 0.3f),
+    /** Glass tiles over Home's hero wave: a light wash with a brighter rim. */
+    val glassTile: Color = PlataPalette.White.copy(alpha = 0.14f),
+    val glassTileBorder: Color = PlataPalette.White.copy(alpha = 0.24f),
     /** Glass Pill: a grey blur material, not a darkening (09c22ffa reads #3A556D over #2E628E). */
     val glassMaterial: Color = PlataPalette.GlassMaterial.copy(alpha = 0.47f),
     /** Hairline around CardThumb and light BrandLogos. */

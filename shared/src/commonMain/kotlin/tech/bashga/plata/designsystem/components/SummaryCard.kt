@@ -1,6 +1,7 @@
 package tech.bashga.plata.designsystem.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,7 +44,7 @@ internal val SummaryTitleSubtitleGap = 3.dp
  * White r20 card, padding 20: 20 bold [title] over a 15/18 [subtitle] (86 high with one line, 025e71c5; 104 with two,
  * 5e61179c; b658c9da and d7d78e0b set it 17/20, `typography.bodyCompact`), with a [trailing] slot (SpendOrb,
  * CardThumb, Chevron, IconButton pair, IconCircle, TextButton) and an optional [body] 16 below the text (TextField + share button on 5e61179c, AmountRow on b658c9da).
- * The centred trailing slot never grows the card.
+ * The centred trailing slot never grows the card. [glass] draws it over Home's hero wave, as ShortcutTile does.
  */
 @Composable
 fun SummaryCard(
@@ -55,15 +56,18 @@ fun SummaryCard(
     trailingAlignment: SummaryCardTrailingAlignment = SummaryCardTrailingAlignment.Center,
     contentPadding: PaddingValues = PaddingValues(PlataTheme.spacing.cardPadding),
     bodyGap: Dp = PlataTheme.spacing.s16,
+    glass: Boolean = false,
     body: (@Composable ColumnScope.() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = PlataTheme.colors
     val typography = PlataTheme.typography
+    val ink = if (glass) colors.textOnDark else colors.textPrimary
+    val shape = ContinuousRoundedShape(PlataTheme.radii.xl)
     Column(
         modifier
             .fillMaxWidth()
-            .background(colors.surfaceCard, ContinuousRoundedShape(PlataTheme.radii.xl))
+            .then(if (glass) Modifier.background(colors.glassTile, shape).border(1.dp, colors.glassTileBorder, shape) else Modifier.background(colors.surfaceCard, shape))
             .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .padding(contentPadding),
     ) {
@@ -73,10 +77,10 @@ fun SummaryCard(
             verticalAlignment = if (trailingAlignment == SummaryCardTrailingAlignment.Top) Alignment.Top else Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                PlataText(title, typography.title3, colors.textPrimary)
+                PlataText(title, typography.title3, ink)
                 if (subtitle != null) {
                     Spacer(Modifier.height(SummaryTitleSubtitleGap))
-                    PlataText(subtitle, subtitleStyle, colors.textPrimary)
+                    PlataText(subtitle, subtitleStyle, ink)
                 }
             }
             if (trailing != null) {

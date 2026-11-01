@@ -151,6 +151,11 @@ object PlataPalette {
     val MethodDark = Color(0xFF272C34)
     val MethodOrange = Color(0xFFFF5A0F)
     val ControlOff = Color(0xFFC8C9CF)
+    // the brand gradient (red to amber); Home's hero wave flows between them and sinks into HeroDepth at its foot
+    val BrandRed = Color(0xFFFF4000)
+    val BrandOrange = Color(0xFFFF5000)
+    val BrandAmber = Color(0xFFFF711F)
+    val HeroDepth = Color(0xFF850400)
     // the launch gradient's two ends; the native launch screens use SplashOrange too
     val SplashOrange = Color(0xFFFC6402)
     val SplashRed = Color(0xFFF91101)

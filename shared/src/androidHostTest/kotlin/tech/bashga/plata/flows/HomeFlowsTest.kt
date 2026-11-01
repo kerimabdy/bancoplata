@@ -148,7 +148,7 @@ class HomeFlowsTest {
         waitFor("Time to use your card", substring = true)
         tap("Done")
         waitGone("Time to use your card", substring = true)
-        waitFor("Cashback")
+        waitFor("Cashback earned")
     }
 
     @Test

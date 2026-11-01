@@ -23,7 +23,8 @@ import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /**
  * Home credit card (025e71c5): 20 bold [amount] over a 15/18 [caption] 3 below (as SummaryCard), 13 [status]
- * top-right in text/secondary, a row of CardThumbs ([cards], 12 apart) and an InsetRow link ([rowLabel] / [rowAction]).
+ * top-right in text/secondary, a row of CardThumbs ([cards], 12 apart) and an InsetRow link ([rowLabel] / [rowAction];
+ * none when [rowLabel] is null).
  * [sectionGap] separates the three blocks: 20 on 025e71c5 and 9f1aa9fc, 16–18 on 9533117e and f5db1665.
  */
 @Composable
@@ -32,7 +33,7 @@ fun CreditSummaryCard(
     caption: String,
     modifier: Modifier = Modifier,
     status: String? = null,
-    rowLabel: String = "Payment dates",
+    rowLabel: String? = "Payment dates",
     rowAction: String = "Show",
     onRowAction: () -> Unit = {},
     contentPadding: PaddingValues = PaddingValues(PlataTheme.spacing.cardPadding),
@@ -57,8 +58,10 @@ fun CreditSummaryCard(
         }
         Spacer(Modifier.height(sectionGap))
         Row(horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s12), content = cards)
-        Spacer(Modifier.height(sectionGap))
-        InsetRow(rowLabel, rowAction, Modifier.fillMaxWidth(), onValueClick = onRowAction)
+        if (rowLabel != null) {
+            Spacer(Modifier.height(sectionGap))
+            InsetRow(rowLabel, rowAction, Modifier.fillMaxWidth(), onValueClick = onRowAction)
+        }
     }
 }
 
