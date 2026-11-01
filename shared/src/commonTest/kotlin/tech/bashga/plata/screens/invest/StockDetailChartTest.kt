@@ -105,7 +105,6 @@ class StockDetailChartTest {
             ChartRange.Week to "Tue 14:07",
             ChartRange.Month to "5 Mar",
             ChartRange.Year to "5 Mar 2024",
-            ChartRange.All to "5 Mar 2024",
         )
         for ((range, label) in cases) assertEquals(label, range.scrubLabel(at, TimeZone.UTC), "$range")
         assertNotEquals(ChartRange.Hour.scrubLabel(at, TimeZone.UTC), ChartRange.Hour.scrubLabel(at, TimeZone.of("Asia/Tokyo")))

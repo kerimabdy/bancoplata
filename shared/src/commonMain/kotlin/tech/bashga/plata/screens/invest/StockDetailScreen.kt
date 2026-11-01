@@ -75,7 +75,6 @@ enum class ChartRange(val label: String, val caption: String) {
     Week("W", "Past week"),
     Month("M", "Past month"),
     Year("Y", "Past year"),
-    All("All time", "All time"),
 }
 
 /** One range's chart: [points] are prices in USD cents oldest first, sampled at [times] epoch ms. */
@@ -138,7 +137,6 @@ private val rangeAxes = mapOf(
     ChartRange.Week to listOf("Mon", "Tue", "Wed", "Thu"),
     ChartRange.Month to listOf("W1", "W2", "W3", "W4"),
     ChartRange.Year to listOf("Q1", "Q2", "Q3", "Q4"),
-    ChartRange.All to listOf("2021", "2022", "2023", "2024"),
 )
 
 /** The range's chart for [ticker]: a seeded walk ending at [quote]'s price and [nowMillis]; Day starts at the day-open price. */
@@ -150,7 +148,6 @@ fun chartData(ticker: String, quote: Quote, range: ChartRange, nowMillis: Long):
         ChartRange.Week -> 7 * DayMillis
         ChartRange.Month -> 30 * DayMillis
         ChartRange.Year -> 365 * DayMillis
-        ChartRange.All -> 4 * 365 * DayMillis
     }
     val axis = when (range) {
         ChartRange.Hour -> LiveChartAxis.Clock(ClockStepMillis)
@@ -169,7 +166,6 @@ fun chartData(ticker: String, quote: Quote, range: ChartRange, nowMillis: Long):
         ChartRange.Week -> 0.02
         ChartRange.Month -> 0.04
         ChartRange.Year -> 0.08
-        ChartRange.All -> 0.15
     }
     val count = if (range == ChartRange.Day) (DayMillis / DaySampleMillis).toInt() + 1 else 60
     val walk = MutableList(count) { 0.0 }
@@ -192,7 +188,7 @@ private const val DaySampleMillis = 300_000L
 /** How long a range change's simulated load lasts. */
 const val RangeLoadMillis = 500L
 
-/** [epochMillis] labelled for this range: 1h/1d HH:mm, 1w EEE HH:mm, 1m d MMM, 1y/All d MMM yyyy. */
+/** [epochMillis] labelled for this range: 1h/1d HH:mm, 1w EEE HH:mm, 1m d MMM, 1y d MMM yyyy. */
 fun ChartRange.scrubLabel(epochMillis: Long, timeZone: TimeZone = TimeZone.currentSystemDefault()): String {
     val time = Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(timeZone)
     val date = "${time.day} ${MonthNames[time.month.ordinal]}"
@@ -200,7 +196,7 @@ fun ChartRange.scrubLabel(epochMillis: Long, timeZone: TimeZone = TimeZone.curre
         ChartRange.Hour, ChartRange.Day -> formatClockTime(epochMillis, timeZone)
         ChartRange.Week -> "${WeekdayNames[time.dayOfWeek.ordinal]} ${formatClockTime(epochMillis, timeZone)}"
         ChartRange.Month -> date
-        ChartRange.Year, ChartRange.All -> "$date ${time.year}"
+        ChartRange.Year -> "$date ${time.year}"
     }
 }
 
