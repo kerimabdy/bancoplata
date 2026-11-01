@@ -1,0 +1,9 @@
+<!-- The launch window before Android 12's splash screen API: orange with the wordmark centred. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_orange" />
+    <item
+        android:width="288dp"
+        android:height="288dp"
+        android:drawable="@drawable/splash_icon"
+        android:gravity="center" />
+</layer-list>

@@ -151,6 +151,9 @@ object PlataPalette {
     val MethodDark = Color(0xFF272C34)
     val MethodOrange = Color(0xFFFF5A0F)
     val ControlOff = Color(0xFFC8C9CF)
+    // the launch gradient's two ends; the native launch screens use SplashOrange too
+    val SplashOrange = Color(0xFFFC6402)
+    val SplashRed = Color(0xFFF91101)
     val OnGradientInk = Color(0xFF781900)
     val KeypadOnGradientInk = Color(0xFF2A0A04)
     val KeypadSystem = Color(0xFFD3D5D8)

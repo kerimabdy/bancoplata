@@ -24,9 +24,8 @@ import tech.bashga.plata.screens.auth.SplashContent
 class AuthStateScreenshots : ScreenshotTest() {
     @Test fun `e61c2bc5`() = screenState("e61c2bc5") { SplashContent() }
 
-    // the root replace (350 ms) has landed; the splash lockups hold until 500 ms before fading
-    @Test fun `b76b9dda`() = screenState("b76b9dda", clockMillis = 420, replacing = { SplashContent() }) {
-        LockContent(LockState(length = 4), onAction = {}, splashLockups = true)
+    @Test fun `b76b9dda`() = screenState("b76b9dda") {
+        LockContent(LockState(length = 4), onAction = {})
     }
 
     // the last frames of the root replace after Log out, the page all but zoomed in

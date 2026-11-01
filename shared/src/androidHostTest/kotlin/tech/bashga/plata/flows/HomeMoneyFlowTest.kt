@@ -39,7 +39,7 @@ abstract class HomeMoneyFlowTest {
     @get:Rule
     val rule = createAndroidComposeRule<ComponentActivity>()
 
-    /** Live, logged in with passcode 123456, activation done: Splash → Lock. */
+    /** Live, logged in with passcode 123456, activation done: launches at Lock. */
     val live = AppSnapshot(
         session = Session("5512345678", PASSCODE, deviceLinked = true, loggedIn = true),
         stage = Stage.Live,
@@ -51,7 +51,7 @@ abstract class HomeMoneyFlowTest {
         PlataTheme { ProvideSafeArea(PlataSafeArea.IPhone) { PlataApp(repository) } }
     }
 
-    /** Launches at Splash, unlocks Lock with the passcode keypad and waits for Home. */
+    /** Launches at Lock, unlocks it with the passcode keypad and waits for Home. */
     fun launchAtHome(repository: AppRepository) {
         launch(repository)
         waitFor("1")

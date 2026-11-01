@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Plata" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- MainActivity launches in this and switches to Theme.Plata before its first frame -->
+    <style name="Theme.Plata.Starting">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>

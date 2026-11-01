@@ -1,6 +1,5 @@
 package tech.bashga.plata.navigation.graph
 
-import androidx.compose.runtime.remember
 import androidx.navigation.NavGraphBuilder
 import kotlinx.serialization.Serializable
 import tech.bashga.plata.data.AppRepository
@@ -12,11 +11,6 @@ import tech.bashga.plata.screens.auth.LockScreen
 import tech.bashga.plata.screens.auth.PasscodeScreen
 import tech.bashga.plata.screens.auth.PhoneNumberScreen
 import tech.bashga.plata.screens.auth.ScanCardQrScreen
-import tech.bashga.plata.screens.auth.SplashHandoff
-import tech.bashga.plata.screens.auth.SplashScreen
-
-@Serializable
-data object SplashRoute
 
 @Serializable
 data object LockRoute
@@ -33,7 +27,8 @@ data object PasscodeRoute
 @Serializable
 data object EnableFaceIdRoute
 
-private fun AppRepository.afterSplash(): Any = if (snapshot.session.loggedIn) LockRoute else PhoneNumberRoute
+/** Where a launch lands, behind the system splash. */
+fun AppRepository.launchRoute(): Any = if (snapshot.session.loggedIn) LockRoute else PhoneNumberRoute
 
 private fun AppNavigator.afterOtp(step: AuthStep) = navigate(
     when (step) {
@@ -44,23 +39,14 @@ private fun AppNavigator.afterOtp(step: AuthStep) = navigate(
 )
 
 fun NavGraphBuilder.authGraph(nav: AppNavigator, repository: AppRepository) {
-    val splashHandoff = SplashHandoff()
-    screen<SplashRoute> {
-        SplashScreen(onLaunched = {
-            splashHandoff.arm()
-            nav.replaceRoot(repository.afterSplash())
-        })
-    }
     screen<LockRoute> {
         LockScreen(
-            splashLockups = remember { splashHandoff.consume() },
             onUnlocked = nav::goToStageRoot,
             onLoggedOut = { nav.replaceRoot(PhoneNumberRoute) },
         )
     }
     screen<PhoneNumberRoute> {
         PhoneNumberScreen(
-            splashLockups = remember { splashHandoff.consume() },
             onOtpConfirmed = nav::afterOtp,
             onPrivacyNotice = {},
         )

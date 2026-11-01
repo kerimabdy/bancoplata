@@ -12,7 +12,7 @@ import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.screenshots.PLATA_DEVICE
 import kotlin.test.assertTrue
 
-/** SCREEN-MAP §5.1 steps 1–3: Splash → Lock → the stored passcode opens the stage root; a wrong one keeps the lock. */
+/** SCREEN-MAP §5.1 steps 1–3: launch at Lock → the stored passcode opens the stage root; a wrong one keeps the lock. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36], qualifiers = PLATA_DEVICE)

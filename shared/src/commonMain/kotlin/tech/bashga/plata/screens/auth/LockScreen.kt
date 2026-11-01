@@ -1,6 +1,6 @@
 package tech.bashga.plata.screens.auth
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,16 +14,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.jetbrains.compose.resources.painterResource
-import plata.shared.generated.resources.Res
-import plata.shared.generated.resources.raster_lock_background
 import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.data.LocalAppRepository
 import tech.bashga.plata.designsystem.components.Keypad
@@ -82,9 +79,9 @@ class LockViewModel(private val repository: AppRepository) : ViewModel() {
     }
 }
 
-/** lock: the app-entry gate. [splashLockups] when it replaced Splash, so the launch lockups fade out over it. */
+/** lock: the app-entry gate. */
 @Composable
-fun LockScreen(splashLockups: Boolean, onUnlocked: () -> Unit, onLoggedOut: () -> Unit) {
+fun LockScreen(onUnlocked: () -> Unit, onLoggedOut: () -> Unit) {
     val repository = LocalAppRepository.current
     val viewModel = viewModel { LockViewModel(repository) }
     val state by viewModel.state.collectAsState()
@@ -95,7 +92,7 @@ fun LockScreen(splashLockups: Boolean, onUnlocked: () -> Unit, onLoggedOut: () -
             LockStatus.Entering, LockStatus.Error -> Unit
         }
     }
-    LockContent(state, viewModel::onAction, splashLockups = splashLockups)
+    LockContent(state, viewModel::onAction)
 }
 
 // b76b9dda: title box at y 215.5, dots at 298, keypad bottom 14 above the home-indicator inset
@@ -103,12 +100,16 @@ private val TitleTop = 156.5.dp
 private val TitleToDots = 57.5.dp
 private val KeypadBottom = 14.dp
 
+// the lock backdrop is the splash under white: its black reads 0x91, 57%
+private val LockVeil = Color.White.copy(alpha = 0.57f)
+
 @Composable
-fun LockContent(state: LockState, onAction: (LockAction) -> Unit, modifier: Modifier = Modifier, splashLockups: Boolean = false) {
+fun LockContent(state: LockState, onAction: (LockAction) -> Unit, modifier: Modifier = Modifier) {
     val safeArea = PlataSafeArea.current
     val accent = PlataTheme.colors.accent
     Box(modifier.fillMaxSize()) {
-        Image(painterResource(Res.drawable.raster_lock_background), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        SplashBackground()
+        Box(Modifier.fillMaxSize().background(LockVeil))
         Column(Modifier.align(Alignment.TopCenter), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.height(safeArea.top + TitleTop))
             PlataText("Enter passcode", PlataTheme.typography.title3, PlataTheme.colors.onGradientInk)
@@ -127,6 +128,5 @@ fun LockContent(state: LockState, onAction: (LockAction) -> Unit, modifier: Modi
             leading = { KeypadKey(PlataIcons.Logout, { onAction(LockAction.LogOut) }, tint = accent, contentDescription = "Log out") },
             trailing = { KeypadKey(PlataIcons.FaceId, { onAction(LockAction.FaceId) }, tint = accent, contentDescription = "Face ID") },
         )
-        if (splashLockups) SplashLockupsFadingOut()
     }
 }

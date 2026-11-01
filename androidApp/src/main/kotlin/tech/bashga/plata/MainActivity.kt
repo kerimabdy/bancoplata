@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_Plata)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 

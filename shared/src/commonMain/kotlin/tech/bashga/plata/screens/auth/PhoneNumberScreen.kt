@@ -138,7 +138,6 @@ class PhoneNumberViewModel(private val repository: AppRepository) : ViewModel() 
 /** auth/phone: the number, then the Otp sheet; [onOtpConfirmed] gets where auth goes next. */
 @Composable
 fun PhoneNumberScreen(
-    splashLockups: Boolean,
     onOtpConfirmed: (AuthStep) -> Unit,
     onPrivacyNotice: () -> Unit,
 ) {
@@ -159,7 +158,6 @@ fun PhoneNumberScreen(
             if (action == PhoneNumberAction.PrivacyNotice) onPrivacyNotice()
             viewModel.onAction(action)
         },
-        splashLockups = splashLockups,
     )
 }
 
@@ -177,7 +175,6 @@ fun PhoneNumberContent(
     state: PhoneNumberState,
     onAction: (PhoneNumberAction) -> Unit,
     modifier: Modifier = Modifier,
-    splashLockups: Boolean = false,
     focusCode: Boolean = true,
 ) {
     val spacing = PlataTheme.spacing
@@ -204,7 +201,6 @@ fun PhoneNumberContent(
             link = "Privacy notice",
             onLinkClick = { onAction(PhoneNumberAction.PrivacyNotice) },
         )
-        if (splashLockups) SplashLockupsFadingOut()
     }
     SheetOverlay(state.overlay as? PhoneOverlay.Otp, onDismiss = { onAction(PhoneNumberAction.CancelOtp) }) { otp ->
         OtpSheet(otp, state.phone, onAction, focusCode)

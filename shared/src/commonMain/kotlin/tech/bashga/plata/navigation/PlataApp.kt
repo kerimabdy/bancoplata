@@ -14,11 +14,11 @@ import androidx.navigation.createGraph
 import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.data.LocalAppRepository
 import tech.bashga.plata.dev.devPanel
-import tech.bashga.plata.navigation.graph.SplashRoute
 import tech.bashga.plata.navigation.graph.authGraph
 import tech.bashga.plata.navigation.graph.deliveryGraph
 import tech.bashga.plata.navigation.graph.homeGraph
 import tech.bashga.plata.navigation.graph.investGraph
+import tech.bashga.plata.navigation.graph.launchRoute
 import tech.bashga.plata.navigation.graph.paymentsGraph
 import tech.bashga.plata.navigation.graph.supportGraph
 
@@ -34,11 +34,11 @@ fun NavGraphBuilder.plataGraph(nav: AppNavigator, repository: AppRepository) {
 }
 
 /**
- * The running app over [repository]: the root graph from [startDestination] (Splash), the tab shell and the
- * presented layers. Dev › Reset recreates the graph, which relaunches at Splash.
+ * The running app over [repository]: the root graph from [startDestination] (where a launch lands, Lock or
+ * PhoneNumber), the tab shell and the presented layers. Dev › Reset recreates the graph, which relaunches.
  */
 @Composable
-fun PlataApp(repository: AppRepository, modifier: Modifier = Modifier, startDestination: Any = SplashRoute) {
+fun PlataApp(repository: AppRepository, modifier: Modifier = Modifier, startDestination: Any? = null) {
     val launch by repository.launches.collectAsState()
     CompositionLocalProvider(LocalAppRepository provides repository) {
         LifecycleStartEffect(repository) {
@@ -49,7 +49,7 @@ fun PlataApp(repository: AppRepository, modifier: Modifier = Modifier, startDest
             val navigator = remember { PlataNavigator() }
             val controller = rememberNavController(navigator)
             val nav = remember(controller) { AppNavigator(controller, navigator, repository) }
-            val graph = remember(controller) { controller.createGraph(startDestination) { plataGraph(nav, repository) } }
+            val graph = remember(controller) { controller.createGraph(startDestination ?: repository.launchRoute()) { plataGraph(nav, repository) } }
             CompositionLocalProvider(LocalAppNavigator provides nav) {
                 PlataNavHost(controller, navigator, graph, modifier, baseFrame = { top, content -> MainShell(top, nav, content) })
             }

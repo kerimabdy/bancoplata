@@ -1,0 +1,4 @@
+<resources>
+    <!-- PlataPalette.SplashOrange, the launch gradient's orange end -->
+    <color name="splash_orange">#FC6402</color>
+</resources>

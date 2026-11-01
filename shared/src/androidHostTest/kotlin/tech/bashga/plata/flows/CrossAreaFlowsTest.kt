@@ -49,7 +49,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
- * SCREEN-MAP §5 flows that cross areas, on one running [PlataApp] from Splash: first run (5.3) → delivery (5.5) →
+ * SCREEN-MAP §5 flows that cross areas, on one running [PlataApp] from launch: first run (5.3) → delivery (5.5) →
  * onboarding (5.1) → Home; log out (5.33) → log in (5.4); Home → Payments (5.34, 5.29) → Home's balances.
  */
 @OptIn(ExperimentalTestApi::class, ExperimentalCoroutinesApi::class)
