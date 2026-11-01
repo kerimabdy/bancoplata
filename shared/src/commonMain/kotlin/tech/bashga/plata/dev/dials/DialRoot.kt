@@ -140,26 +140,30 @@ fun DialRoot(
         }
         val cap by animateDpAsState(if (shown == DrawerPresentation.Tall) tall else medium, drawerHeightSpring)
 
-        if (presentation != DrawerPresentation.Hidden) {
-            Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { hide() } })
-        }
         if (overlayShown) {
-            DialDrawerPanel(
-                panel = panel,
-                panels = panels,
-                onSelectPanel = { selectedPanel = it },
-                maxHeight = cap,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(horizontal = DrawerInset)
-                    .offset { IntOffset(0, slide.value.roundToInt()) },
-                onDrag = { dy ->
-                    if (abs(dy) > stepDrag) {
-                        val target = presentation.next(dragUp = dy < 0)
-                        if (target == DrawerPresentation.Hidden) hide() else if (target != presentation) present(target)
+            DialLayer(IntOffset.Zero) {
+                Box(Modifier.fillMaxSize()) {
+                    if (presentation != DrawerPresentation.Hidden) {
+                        Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { hide() } })
                     }
-                },
-            )
+                    DialDrawerPanel(
+                        panel = panel,
+                        panels = panels,
+                        onSelectPanel = { selectedPanel = it },
+                        maxHeight = cap,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = DrawerInset)
+                            .offset { IntOffset(0, slide.value.roundToInt()) },
+                        onDrag = { dy ->
+                            if (abs(dy) > stepDrag) {
+                                val target = presentation.next(dragUp = dy < 0)
+                                if (target == DrawerPresentation.Hidden) hide() else if (target != presentation) present(target)
+                            }
+                        },
+                    )
+                }
+            }
         }
         AnimatedVisibility(!overlayShown, enter = fadeIn(swiftSpring(0.22f, 0.9f)), exit = fadeOut(swiftSpring(0.22f, 0.9f))) {
             DialFab(position, maxWidth, maxHeight) { present(DrawerPresentation.Medium) }
@@ -194,41 +198,49 @@ private fun DialFab(position: DialPosition, width: Dp, height: Dp, onClick: () -
             DialPosition.BottomLeft -> Offset(minX, maxY)
         }
         val at = clamp(DialStore.fabCenter ?: default)
-        Box(
-            Modifier
-                .offset { IntOffset((at.x - radius).roundToInt(), (at.y - radius).roundToInt()) }
-                .size(FabDiameter)
-                .graphicsLayer {
-                    scaleX = lerp(1f, 1.24f, lift)
-                    scaleY = scaleX
-                }
-                .dropShadow(
-                    CircleShape,
-                    Shadow(
-                        radius = lerp(16f, 28f, lift).dp,
-                        color = Color.Black.copy(alpha = lerp(0.25f, 0.68f, lift)),
-                        offset = DpOffset(0.dp, lerp(4f, 0f, lift).dp),
-                    ),
-                )
-                .background(FabColor, CircleShape)
-                .border(1.dp, DialTheme.border, CircleShape)
-                .pointerInput(Unit) { detectTapGestures { onClick() } }
-                .pointerInput(minX, maxX, minY, maxY) {
-                    detectDragGestures(
-                        onDragStart = { dragging = true },
-                        onDragEnd = { dragging = false },
-                        onDragCancel = { dragging = false },
-                    ) { change, amount ->
-                        change.consume()
-                        DialStore.fabCenter = clamp((DialStore.fabCenter ?: default) + amount)
+        DialLayer(IntOffset((at.x - radius).roundToInt(), (at.y - radius).roundToInt())) {
+            Box(
+                Modifier
+                    .size(FabDiameter)
+                    .graphicsLayer {
+                        scaleX = lerp(1f, 1.24f, lift)
+                        scaleY = scaleX
                     }
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            DialIcon(DialGlyph.Sliders, 22.dp, Color.White, strokeWidth = 1.9f)
+                    .dropShadow(
+                        CircleShape,
+                        Shadow(
+                            radius = lerp(16f, 28f, lift).dp,
+                            color = Color.Black.copy(alpha = lerp(0.25f, 0.68f, lift)),
+                            offset = DpOffset(0.dp, lerp(4f, 0f, lift).dp),
+                        ),
+                    )
+                    .background(FabColor, CircleShape)
+                    .border(1.dp, DialTheme.border, CircleShape)
+                    .pointerInput(Unit) { detectTapGestures { onClick() } }
+                    .pointerInput(minX, maxX, minY, maxY) {
+                        detectDragGestures(
+                            onDragStart = { dragging = true },
+                            onDragEnd = { dragging = false },
+                            onDragCancel = { dragging = false },
+                        ) { change, amount ->
+                            change.consume()
+                            DialStore.fabCenter = clamp((DialStore.fabCenter ?: default) + amount)
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                DialIcon(DialGlyph.Sliders, 22.dp, Color.White, strokeWidth = 1.9f)
+            }
         }
     }
 }
+
+/**
+ * The drawer and the button, placed at [offset] from the top left. On iOS they go in a popup, the one Compose layer
+ * drawn above native views such as the tab bar; elsewhere they draw in place.
+ */
+@Composable
+internal expect fun DialLayer(offset: IntOffset, content: @Composable () -> Unit)
 
 @Composable
 private fun DialDrawerPanel(

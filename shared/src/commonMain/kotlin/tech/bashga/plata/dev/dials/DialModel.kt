@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -20,6 +21,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.round
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
 import kotlin.properties.ReadOnlyProperty
@@ -62,6 +64,9 @@ sealed class DialContainer(key: String, label: String) : DialControl(key, label)
 
     fun spring(key: String, default: DialSpring = DialSpring.Default, label: String = dialFormattedLabel(key)): SpringDial =
         add(SpringDial(panel, key, label, default))
+
+    fun color(key: String, default: Color, label: String = dialFormattedLabel(key)): ColorDial =
+        add(ColorDial(panel, key, label, default))
 
     fun folder(key: String, collapsed: Boolean = false, label: String = dialFormattedLabel(key)): DialFolder =
         add(DialFolder(panel, key, label, collapsed))
@@ -160,6 +165,32 @@ class SelectDial internal constructor(
 
     override fun json(): JsonElement = JsonPrimitive(value)
 }
+
+/** An opaque colour; the JSON and the row show it as hex. */
+@Stable
+class ColorDial internal constructor(private val panel: DialPanel, key: String, label: String, default: Color) :
+    DialControl(key, label), ValueDial, ReadOnlyProperty<Any?, Color> {
+    var value by mutableStateOf(default.copy(alpha = 1f))
+        private set
+
+    fun set(to: Color) {
+        value = to.copy(alpha = 1f)
+        panel.valuesChanged()
+    }
+
+    override fun getValue(thisRef: Any?, property: KProperty<*>): Color = value
+
+    override fun snapshot(): Any = value
+
+    override fun restore(value: Any) {
+        this.value = value as Color
+    }
+
+    override fun json(): JsonElement = JsonPrimitive(dialHex(value))
+}
+
+fun dialHex(color: Color): String =
+    "#" + listOf(color.red, color.green, color.blue).joinToString("") { (it * 255).roundToInt().toString(16).padStart(2, '0').uppercase() }
 
 /** A spring by [Time] (SwiftUI's duration and bounce) or by [Physics] (stiffness, damping and mass). */
 sealed interface DialSpring {

@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -98,6 +100,7 @@ internal fun DialControlList(panel: DialPanel, controls: List<DialControl>, pref
             is SliderDial -> DialSliderRow(control.label, control.value, control.range, control.step, control.unit, control::set)
             is ToggleDial -> DialSegmentedRow(control.label, listOf(false to "Off", true to "On"), control.value, control::set)
             is SelectDial -> DialSelectRow(control)
+            is ColorDial -> DialColorRow(control)
             is SpringDial -> DialFolderSection(control.label, panel.expanded[path] ?: true, { panel.expanded[path] = it }, divider) {
                 DialSpringEditor(control)
             }
@@ -278,6 +281,52 @@ private fun DialSelectRow(control: SelectDial) {
             DialMenu(control.options.map { option -> DialMenuItem.Choice(option.label, checked = option.value == control.value) { control.set(option.value) } }) { open = false }
         }
     }
+}
+
+@Composable
+private fun DialColorRow(control: ColorDial) {
+    var open by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            Modifier.dialRow().pressable { open = !open }.padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            PlataText(control.label, dialText(), DialTheme.textLabel, maxLines = 1)
+            Spacer(Modifier.weight(1f).widthIn(min = 2.dp))
+            PlataText(dialHex(control.value), dialText(monospaced = true), DialTheme.textLabel, maxLines = 1)
+            Box(Modifier.size(16.dp).background(control.value, SwatchShape).border(1.dp, DialTheme.border, SwatchShape))
+        }
+        if (open) DialColorEditor(control)
+    }
+}
+
+private val SwatchShape = RoundedCornerShape(4.dp)
+
+@Composable
+private fun DialColorEditor(control: ColorDial) {
+    val (hue, saturation, brightness) = control.value.hsv()
+    // grey and black carry no hue, so the last one picked is kept for when saturation comes back
+    var pickedHue by remember { mutableFloatStateOf(hue) }
+    val shownHue = if (saturation > 0f && brightness > 0f) hue else pickedHue
+    DialSliderRow("Hue", shownHue, 0f..360f, 1f, "°") {
+        pickedHue = it
+        control.set(Color.hsv(it, saturation, brightness))
+    }
+    DialSliderRow("Saturation", saturation * 100, 0f..100f, 1f, "%") { control.set(Color.hsv(shownHue, it / 100, brightness)) }
+    DialSliderRow("Brightness", brightness * 100, 0f..100f, 1f, "%") { control.set(Color.hsv(shownHue, saturation, it / 100)) }
+}
+
+private fun Color.hsv(): Triple<Float, Float, Float> {
+    val max = maxOf(red, green, blue)
+    val delta = max - minOf(red, green, blue)
+    val hue = when {
+        delta == 0f -> 0f
+        max == red -> 60f * ((green - blue) / delta).mod(6f)
+        max == green -> 60f * ((blue - red) / delta + 2)
+        else -> 60f * ((red - green) / delta + 4)
+    }
+    return Triple(hue.coerceIn(0f, 360f), if (max == 0f) 0f else delta / max, max)
 }
 
 @Composable
