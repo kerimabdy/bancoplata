@@ -122,7 +122,7 @@ fun BetweenAccountsScreen(onTransferred: (TransferResultRoute) -> Unit, onCancel
 // 6e1c2ab5: the first card 22 under the sheet bar; the wordmark is PlataAppTile's
 private val FormTop = 22.dp
 private val WordmarkWidth = 32.dp
-private val WordmarkHeight = 6.2.dp
+private val WordmarkHeight = 4.8.dp
 
 @Composable
 fun BetweenAccountsContent(

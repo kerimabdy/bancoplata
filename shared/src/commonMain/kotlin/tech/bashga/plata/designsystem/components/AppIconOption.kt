@@ -88,7 +88,7 @@ fun PlataAppIcon() {
         Image(
             rememberVectorPainter(PlataIcons.PlataWordmark),
             contentDescription = "Plata",
-            modifier = Modifier.size(44.8.dp, 8.7.dp),
+            modifier = Modifier.size(44.8.dp, 6.72.dp),
             colorFilter = ColorFilter.tint(PlataTheme.colors.textOnDark),
         )
     }

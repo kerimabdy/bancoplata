@@ -60,7 +60,7 @@ internal fun IconTileLogoPreview() = PlataTheme {
         Image(
             rememberVectorPainter(PlataIcons.PlataWordmark),
             contentDescription = "Plata",
-            modifier = Modifier.size(32.dp, 6.2.dp),
+            modifier = Modifier.size(32.dp, 4.8.dp),
             colorFilter = ColorFilter.tint(PlataTheme.colors.textOnDark),
         )
     }
