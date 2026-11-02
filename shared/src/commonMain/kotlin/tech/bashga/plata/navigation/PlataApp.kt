@@ -38,7 +38,7 @@ fun NavGraphBuilder.plataGraph(nav: AppNavigator, repository: AppRepository) {
  * PhoneNumber), the tab shell and the presented layers. Dev › Reset recreates the graph, which relaunches.
  */
 @Composable
-fun PlataApp(repository: AppRepository, modifier: Modifier = Modifier, startDestination: Any? = null) {
+fun PlataApp(repository: AppRepository, modifier: Modifier = Modifier, startDestination: Any? = null, backStyle: BackStyle = platformBackStyle) {
     val launch by repository.launches.collectAsState()
     CompositionLocalProvider(LocalAppRepository provides repository) {
         LifecycleStartEffect(repository) {
@@ -51,7 +51,7 @@ fun PlataApp(repository: AppRepository, modifier: Modifier = Modifier, startDest
             val nav = remember(controller) { AppNavigator(controller, navigator, repository) }
             val graph = remember(controller) { controller.createGraph(startDestination ?: repository.launchRoute()) { plataGraph(nav, repository) } }
             CompositionLocalProvider(LocalAppNavigator provides nav) {
-                PlataNavHost(controller, navigator, graph, modifier, baseFrame = { top, content -> MainShell(top, nav, content) })
+                PlataNavHost(controller, navigator, graph, modifier, baseFrame = { top, content -> MainShell(top, nav, content) }, style = backStyle)
             }
         }
     }

@@ -128,10 +128,11 @@ fun PlataNavHost(
     if (LocalNavigationEventDispatcherOwner.current != null) {
         val backState = rememberNavigationEventState(NavigationEventInfo.None)
         val scope = rememberCoroutineScope()
-        LaunchedEffect(backState) {
+        val touchWidth = if (style == BackStyle.Ios) LocalWindowInfo.current.containerSize.width.toFloat() else 0f
+        LaunchedEffect(backState, touchWidth) {
             snapshotFlow { backState.transitionState }.collect { state ->
                 if (state is NavigationEventTransitionState.InProgress && state.direction == NavigationEventTransitionState.TRANSITIONING_BACK) {
-                    gesture.track(navigator.backStack.value.lastOrNull(), state.latestEvent)
+                    gesture.track(navigator.backStack.value.lastOrNull(), state.latestEvent, touchWidth)
                 }
             }
         }
@@ -279,6 +280,7 @@ private class BackGesture {
     /** Where the top screen still is in its push slide; the layer drawing it sets this so a swipe can grab it mid-push. */
     var pushOffset: (NavBackStackEntry) -> Float = { 0f }
     private var grabbedAt = 0f
+    private var startTouchX = 0f
 
     private var sampledAt = TimeSource.Monotonic.markNow()
     private var frameMillis = 0L
@@ -288,24 +290,33 @@ private class BackGesture {
     var early by mutableStateOf(false)
         private set
 
-    suspend fun track(top: NavBackStackEntry?, event: NavigationEvent) {
+    /** [touchWidth] > 0 measures the swipe from [NavigationEvent.touchX] over that width instead of the event's progress. */
+    suspend fun track(top: NavBackStackEntry?, event: NavigationEvent, touchWidth: Float = 0f) {
         if (early) return
         if (entry == null) {
             entry = top
             edge = event.swipeEdge
             velocity = 0f
             grabbedAt = top?.let(pushOffset) ?: 0f
+            startTouchX = event.touchX
         } else {
             val seconds = if (event.frameTimeMillis > 0 && frameMillis > 0) {
                 (event.frameTimeMillis - frameMillis) / 1_000f
             } else {
                 sampledAt.elapsedNow().inWholeMicroseconds / 1_000_000f
             }
-            if (seconds > 0f) velocity = (grabbed(event.progress) - progress.value) / seconds
+            if (seconds > 0f) velocity = (grabbed(finger(event, touchWidth)) - progress.value) / seconds
         }
         sampledAt = TimeSource.Monotonic.markNow()
         frameMillis = event.frameTimeMillis
-        progress.snapTo(grabbed(event.progress))
+        progress.snapTo(grabbed(finger(event, touchWidth)))
+    }
+
+    // Compose's UIKit input adds its layer's window offset to progress, so under a Popup a swipe starts far along
+    private fun finger(event: NavigationEvent, touchWidth: Float): Float {
+        if (touchWidth <= 0f) return event.progress
+        val moved = if (edge == NavigationEvent.EDGE_RIGHT) startTouchX - event.touchX else event.touchX - startTouchX
+        return (moved / touchWidth).coerceAtLeast(0f)
     }
 
     private fun grabbed(fingerProgress: Float) = grabbedAt + fingerProgress * (1f - grabbedAt)
