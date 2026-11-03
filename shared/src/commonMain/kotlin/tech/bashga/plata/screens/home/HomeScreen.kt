@@ -5,8 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -325,19 +327,19 @@ private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
                 )
                 Spacer(Modifier.height(GreetingToTiles))
                 Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
+                    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
                         val cashback = { onAction(HomeAction.OpenCashback) }
                         if (state.cashback.isEmpty()) {
                             ShortcutTile(
                                 "Choose",
-                                Modifier.weight(1f),
+                                Modifier.weight(1f).fillMaxHeight(),
                                 titleSecondLine = "cashback",
                                 badge = "3",
                                 glass = true,
                                 onClick = cashback,
                             )
                         } else {
-                            ShortcutTile(formatMoney(state.cashbackEarned), Modifier.weight(1f), eyebrow = "Cashback earned", glass = true, onClick = cashback) {
+                            ShortcutTile(formatMoney(state.cashbackEarned), Modifier.weight(1f).fillMaxHeight(), eyebrow = "Cashback earned", glass = true, onClick = cashback) {
                                 ShortcutTileGlyphRow(
                                     CashbackCategory.entries.filter { it in state.cashback }.mapNotNull { it.glyph },
                                     tint = PlataTheme.colors.textOnDark,
@@ -346,7 +348,7 @@ private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
                         }
                         ShortcutTile(
                             "MSI",
-                            Modifier.weight(1f),
+                            Modifier.weight(1f).fillMaxHeight(),
                             titleIcon = PlataIcons.Msi,
                             subtitle = if (state.msiVisited) "109 partners" else "None to defer",
                             badge = if (state.msiVisited) null else "1",
