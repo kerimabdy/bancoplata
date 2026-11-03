@@ -1,7 +1,6 @@
 package tech.bashga.plata.designsystem.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,38 +63,39 @@ fun SummaryCard(
     val typography = PlataTheme.typography
     val ink = if (glass) colors.textOnDark else colors.textPrimary
     val shape = ContinuousRoundedShape(PlataTheme.radii.xl)
-    Column(
-        modifier
-            .fillMaxWidth()
-            .then(if (glass) Modifier.background(colors.glassTile, shape).border(1.dp, colors.glassTileBorder, shape) else Modifier.background(colors.surfaceCard, shape))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
-            .padding(contentPadding),
-    ) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s12),
-            verticalAlignment = if (trailingAlignment == SummaryCardTrailingAlignment.Top) Alignment.Top else Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                PlataText(title, typography.title3, ink)
-                if (subtitle != null) {
-                    Spacer(Modifier.height(SummaryTitleSubtitleGap))
-                    PlataText(subtitle, subtitleStyle, ink)
+    val card: @Composable (Modifier) -> Unit = { surface ->
+        Column(surface.padding(contentPadding)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s12),
+                verticalAlignment = if (trailingAlignment == SummaryCardTrailingAlignment.Top) Alignment.Top else Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    PlataText(title, typography.title3, ink)
+                    if (subtitle != null) {
+                        Spacer(Modifier.height(SummaryTitleSubtitleGap))
+                        PlataText(subtitle, subtitleStyle, ink)
+                    }
+                }
+                if (trailing != null) {
+                    if (trailingAlignment == SummaryCardTrailingAlignment.Top) {
+                        val titleLine = with(LocalDensity.current) { typography.title3.lineHeight.toDp() }
+                        Box(Modifier.height(titleLine), contentAlignment = Alignment.CenterEnd) { trailing() }
+                    } else {
+                        Box(Modifier.heightNeutral()) { trailing() }
+                    }
                 }
             }
-            if (trailing != null) {
-                if (trailingAlignment == SummaryCardTrailingAlignment.Top) {
-                    val titleLine = with(LocalDensity.current) { typography.title3.lineHeight.toDp() }
-                    Box(Modifier.height(titleLine), contentAlignment = Alignment.CenterEnd) { trailing() }
-                } else {
-                    Box(Modifier.heightNeutral()) { trailing() }
-                }
+            if (body != null) {
+                Spacer(Modifier.height(bodyGap))
+                body()
             }
         }
-        if (body != null) {
-            Spacer(Modifier.height(bodyGap))
-            body()
-        }
+    }
+    if (glass) {
+        GlassSurface(colors.glassTile, modifier.fillMaxWidth(), PlataTheme.radii.xl, colors.glassTileBorder, onClick) { card(Modifier.fillMaxWidth()) }
+    } else {
+        card(modifier.fillMaxWidth().background(colors.surfaceCard, shape).then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier))
     }
 }
 

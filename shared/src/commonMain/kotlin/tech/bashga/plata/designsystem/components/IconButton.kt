@@ -19,7 +19,8 @@ import tech.bashga.plata.designsystem.icons.PlusOutlineDuotone
 import tech.bashga.plata.designsystem.icons.QuestionMark
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
-enum class IconButtonStyle { Glass, Grey, Subtle, White, Tinted }
+/** [LiquidGlass]: [Glass] over Home's hero, drawn as shader glass bending the hero (see [GlassSurface]). */
+enum class IconButtonStyle { Glass, LiquidGlass, Grey, Subtle, White, Tinted }
 
 enum class IconButtonSize { S20, S24, S32, S40, S44, S48 }
 
@@ -58,30 +59,35 @@ fun IconButton(
     val colors = PlataTheme.colors
     val shape = if (style == IconButtonStyle.Tinted) ContinuousRoundedShape(PlataTheme.radii.md) else CircleShape
     val fill = when (style) {
-        IconButtonStyle.Glass -> colors.glassLight
+        IconButtonStyle.Glass, IconButtonStyle.LiquidGlass -> colors.glassLight
         IconButtonStyle.Grey -> if (onCard) colors.surfaceBackground else colors.surfaceControl
         IconButtonStyle.Subtle, IconButtonStyle.Tinted -> colors.surfaceBackground
         IconButtonStyle.White -> colors.surfaceCard
     }
     val gradient = style == IconButtonStyle.White || style == IconButtonStyle.Tinted
-    Box(
-        modifier
-            .size(size.box)
-            .background(fill, shape)
-            .pressable(onClickLabel = contentDescription, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
+    val icon: @Composable () -> Unit = {
         Icon(
             glyph,
             size = glyphSize,
             tint = when (style) {
-                IconButtonStyle.Glass -> colors.textOnDark
+                IconButtonStyle.Glass, IconButtonStyle.LiquidGlass -> colors.textOnDark
                 IconButtonStyle.Grey -> colors.textSecondary
                 else -> colors.textPrimary
             },
             brush = if (gradient) PlataTheme.gradients.glyph else null,
             contentDescription = contentDescription,
         )
+    }
+    if (style == IconButtonStyle.LiquidGlass) {
+        GlassSurface(fill, modifier.size(size.box), onClick = onClick, onClickLabel = contentDescription, contentAlignment = Alignment.Center) { icon() }
+    } else {
+        Box(
+            modifier
+                .size(size.box)
+                .background(fill, shape)
+                .pressable(onClickLabel = contentDescription, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) { icon() }
     }
 }
 

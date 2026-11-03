@@ -1,9 +1,9 @@
 package tech.bashga.plata.designsystem.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -80,12 +80,8 @@ fun ShortcutTile(
         ShortcutTileSize.Compact -> ShortcutMetrics(PaddingValues(spacing.s16), 72.dp, typography.footnote, 0.dp)
         ShortcutTileSize.Tall -> ShortcutMetrics(PaddingValues(spacing.s16), 156.dp, typography.footnote, 0.dp)
     }
-    Box(
-        modifier
-            .then(if (size == ShortcutTileSize.Tall) Modifier.height(metrics.minHeight) else Modifier.heightIn(min = metrics.minHeight))
-            .then(if (glass) Modifier.background(colors.glassTile, shape).border(1.dp, colors.glassTileBorder, shape) else Modifier.background(colors.surfaceCard, shape))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier),
-    ) {
+    val frame = modifier.then(if (size == ShortcutTileSize.Tall) Modifier.height(metrics.minHeight) else Modifier.heightIn(min = metrics.minHeight))
+    val tile: @Composable BoxScope.() -> Unit = {
         Column(Modifier.then(if (size == ShortcutTileSize.Tall) Modifier.fillMaxHeight() else Modifier).padding(metrics.padding)) {
             if (eyebrow != null) {
                 PlataText(eyebrow, metrics.subtitle, ink, maxLines = 1)
@@ -125,6 +121,11 @@ fun ShortcutTile(
         if (badge != null) {
             Badge(badge, Modifier.align(Alignment.TopEnd).padding(top = spacing.s12, end = spacing.s12))
         }
+    }
+    if (glass) {
+        GlassSurface(colors.glassTile, frame, PlataTheme.radii.xl, colors.glassTileBorder, onClick, content = tile)
+    } else {
+        Box(frame.background(colors.surfaceCard, shape).then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)) { tile() }
     }
 }
 

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -71,6 +72,7 @@ import tech.bashga.plata.designsystem.components.IconCircleTone
 import tech.bashga.plata.designsystem.components.IconButton
 import tech.bashga.plata.designsystem.components.IconButtonStyle
 import tech.bashga.plata.designsystem.components.ListRow
+import tech.bashga.plata.designsystem.components.LocalHeroWave
 import tech.bashga.plata.designsystem.components.NavigationBar
 import tech.bashga.plata.designsystem.components.PromoCard
 import tech.bashga.plata.designsystem.components.PromoCardLayout
@@ -82,6 +84,7 @@ import tech.bashga.plata.designsystem.components.SpendOrb
 import tech.bashga.plata.designsystem.components.SpendOrbState
 import tech.bashga.plata.designsystem.components.SummaryCard
 import tech.bashga.plata.designsystem.components.rememberCollapsed
+import tech.bashga.plata.designsystem.components.rememberHeroWaveState
 import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.foundation.backdropSource
@@ -305,57 +308,60 @@ private fun CardComingFeed(stage: HomeStage.CardComing, onAction: (HomeAction) -
 private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
     val spacing = PlataTheme.spacing
     val openProfile = { onAction(HomeAction.OpenProfile) }
+    val hero = rememberHeroWaveState()
     Box {
-        HeroWave(Modifier.matchParentSize().extendBelow(HeroOverhang))
-        Column(Modifier.padding(bottom = spacing.cardGap)) {
-            Spacer(Modifier.height(PlataSafeArea.current.top + GreetingTop))
-            GreetingHeader(
-                CustomerName,
-                "Welcome to Plata",
-                Modifier.fillMaxWidth().padding(horizontal = spacing.s40).pressable(onClickLabel = "Profile", onClick = openProfile),
-                avatarImage = state.avatar.painter(),
-                sparkle = state.avatarIsNew,
-                onDark = true,
-                trailing = { IconButton(PlataIcons.ChevronDown, openProfile, style = IconButtonStyle.Glass, contentDescription = "Profile") },
-            )
-            Spacer(Modifier.height(GreetingToTiles))
-            Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
-                    val cashback = { onAction(HomeAction.OpenCashback) }
-                    if (state.cashback.isEmpty()) {
-                        ShortcutTile(
-                            "Choose",
-                            Modifier.weight(1f),
-                            titleSecondLine = "cashback",
-                            badge = "3",
-                            glass = true,
-                            onClick = cashback,
-                        )
-                    } else {
-                        ShortcutTile(formatMoney(state.cashbackEarned), Modifier.weight(1f), eyebrow = "Cashback earned", glass = true, onClick = cashback) {
-                            ShortcutTileGlyphRow(
-                                CashbackCategory.entries.filter { it in state.cashback }.mapNotNull { it.glyph },
-                                tint = PlataTheme.colors.textOnDark,
+        HeroWave(Modifier.matchParentSize().extendBelow(HeroOverhang), hero)
+        CompositionLocalProvider(LocalHeroWave provides hero) {
+            Column(Modifier.padding(bottom = spacing.cardGap)) {
+                Spacer(Modifier.height(PlataSafeArea.current.top + GreetingTop))
+                GreetingHeader(
+                    CustomerName,
+                    "Welcome to Plata",
+                    Modifier.fillMaxWidth().padding(horizontal = spacing.s40).pressable(onClickLabel = "Profile", onClick = openProfile),
+                    avatarImage = state.avatar.painter(),
+                    sparkle = state.avatarIsNew,
+                    onDark = true,
+                    trailing = { IconButton(PlataIcons.ChevronDown, openProfile, style = IconButtonStyle.LiquidGlass, contentDescription = "Profile") },
+                )
+                Spacer(Modifier.height(GreetingToTiles))
+                Column(Modifier.padding(horizontal = spacing.screenMargin), verticalArrangement = Arrangement.spacedBy(spacing.cardGap)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ShortcutGap)) {
+                        val cashback = { onAction(HomeAction.OpenCashback) }
+                        if (state.cashback.isEmpty()) {
+                            ShortcutTile(
+                                "Choose",
+                                Modifier.weight(1f),
+                                titleSecondLine = "cashback",
+                                badge = "3",
+                                glass = true,
+                                onClick = cashback,
                             )
+                        } else {
+                            ShortcutTile(formatMoney(state.cashbackEarned), Modifier.weight(1f), eyebrow = "Cashback earned", glass = true, onClick = cashback) {
+                                ShortcutTileGlyphRow(
+                                    CashbackCategory.entries.filter { it in state.cashback }.mapNotNull { it.glyph },
+                                    tint = PlataTheme.colors.textOnDark,
+                                )
+                            }
                         }
+                        ShortcutTile(
+                            "MSI",
+                            Modifier.weight(1f),
+                            titleIcon = PlataIcons.Msi,
+                            subtitle = if (state.msiVisited) "109 partners" else "None to defer",
+                            badge = if (state.msiVisited) null else "1",
+                            glass = true,
+                            onClick = { onAction(HomeAction.OpenMsi) },
+                        )
                     }
-                    ShortcutTile(
-                        "MSI",
-                        Modifier.weight(1f),
-                        titleIcon = PlataIcons.Msi,
-                        subtitle = if (state.msiVisited) "109 partners" else "None to defer",
-                        badge = if (state.msiVisited) null else "1",
+                    SummaryCard(
+                        "Transactions",
+                        subtitle = spentLabel(state.spent, state.month),
+                        onClick = { onAction(HomeAction.OpenTransactions) },
                         glass = true,
-                        onClick = { onAction(HomeAction.OpenMsi) },
-                    )
-                }
-                SummaryCard(
-                    "Transactions",
-                    subtitle = spentLabel(state.spent, state.month),
-                    onClick = { onAction(HomeAction.OpenTransactions) },
-                    glass = true,
-                ) {
-                    SpendOrb(if (state.spent > 0) SpendOrbState.Active else SpendOrbState.Empty)
+                    ) {
+                        SpendOrb(if (state.spent > 0) SpendOrbState.Active else SpendOrbState.Empty)
+                    }
                 }
             }
         }

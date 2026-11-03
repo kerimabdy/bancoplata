@@ -7,21 +7,31 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.toSize
+import kotlin.math.PI
 import tech.bashga.plata.designsystem.theme.PlataPalette
 import tech.bashga.plata.designsystem.theme.PlataTheme
 import tech.bashga.plata.dev.dials.DialPanel
 import tech.bashga.plata.navigation.rememberReduceMotion
-import kotlin.math.PI
 
 /**
  * The "Hero wave" dials panel: god rays fanning from a point (by default off the hero's top-left corner), one layer of
@@ -69,7 +79,7 @@ internal object HeroWaveDials {
 }
 
 // Paper's god-rays shader (github.com/paper-design/shaders, Apache License 2.0), with the noise texture swapped for a hash
-internal const val WaveSksl = """
+internal const val RaysSksl = """
 uniform float2 size;
 uniform float time;
 uniform float4 color1;
@@ -141,7 +151,7 @@ void addRays(float i, float4 color, float2 uv, float radius, float t, float spot
     accAlpha = mix(blendAlpha, accAlpha + srcAlpha, bloom);
 }
 
-half4 main(float2 p) {
+float3 rays(float2 p) {
     float2 uv = p / size - 0.5;
     uv.y = -uv.y;
     float2 objectUV = uv * size / min(size.x, size.y);
@@ -165,22 +175,64 @@ half4 main(float2 p) {
 
     float3 withBloom = accColor + accAlpha * colorBloom.rgb * colorBloom.a;
     accColor = mix(accColor, withBloom, bloom);
-    float3 color = clamp(accColor + (1.0 - accAlpha) * colorBack.rgb * colorBack.a, 0.0, 1.0);
-    // a 1/256 dither against banding in the long gradients
-    color += (fract(sin(dot(0.014 * p, float2(12.9898, 78.233))) * 43758.5453123) - 0.5) / 256.0;
-    return half4(half3(color), 1.0);
+    return clamp(accColor + (1.0 - accAlpha) * colorBack.rgb * colorBack.a, 0.0, 1.0);
+}
+
+// a 1/256 dither against banding in the long gradients
+float3 dither(float3 color, float2 p) {
+    return color + (fract(sin(dot(0.014 * p, float2(12.9898, 78.233))) * 43758.5453123) - 0.5) / 256.0;
 }
 """
 
+internal const val WaveSksl = RaysSksl + """
+half4 main(float2 p) {
+    return half4(half3(dither(rays(p), p)), 1.0);
+}
+"""
+
+/** The hero's clock and where it sits in the window, so glass over it can redraw the rays it covers. */
+@Stable
+class HeroWaveState internal constructor(internal val clock: State<Float>) {
+    internal var origin by mutableStateOf(Offset.Zero)
+    internal var size by mutableStateOf(Size.Zero)
+}
+
+/** A hero that flows slowly, or stands still under reduce motion. */
+@Composable
+fun rememberHeroWaveState(): HeroWaveState {
+    val clock = rememberWaveClock(!rememberReduceMotion())
+    return remember(clock) { HeroWaveState(clock) }
+}
+
+/** The hero that [GlassSurface]s draw over. */
+val LocalHeroWave = compositionLocalOf<HeroWaveState?> { null }
+
 /**
- * The god-rays hero behind Home's greeting and tiles, flowing slowly (still under reduce motion), fading into [fadeTo]
- * over its last [fade]. An AGSL RuntimeShader on Android, a Skia runtime effect on iOS.
+ * The god-rays hero behind Home's greeting and tiles, fading into [fadeTo] over its last [fade]. An AGSL RuntimeShader
+ * on Android, a Skia runtime effect on iOS.
  */
 @Composable
-fun HeroWave(modifier: Modifier = Modifier, fade: Dp = 96.dp, fadeTo: Color = PlataTheme.colors.surfaceBackground) {
-    val animate = !rememberReduceMotion()
-    Box(modifier) {
-        HeroWaveLayer(Modifier.matchParentSize(), animate)
+fun HeroWave(
+    modifier: Modifier = Modifier,
+    state: HeroWaveState = rememberHeroWaveState(),
+    fade: Dp = 96.dp,
+    fadeTo: Color = PlataTheme.colors.surfaceBackground,
+) {
+    val wave = rememberShaderBrush(WaveSksl)
+    Box(
+        modifier.onGloballyPositioned {
+            state.origin = it.positionInWindow()
+            state.size = it.size.toSize()
+        },
+    ) {
+        Spacer(
+            Modifier.matchParentSize().drawWave(state.clock) { width, height, time ->
+                wave { set ->
+                    set("size", floatArrayOf(width, height))
+                    HeroWaveDials.uniforms(time, set)
+                }
+            },
+        )
         Spacer(
             Modifier.matchParentSize().drawWithCache {
                 val sink = Brush.verticalGradient(*WaveDepth)
@@ -198,14 +250,20 @@ fun HeroWave(modifier: Modifier = Modifier, fade: Dp = 96.dp, fadeTo: Color = Pl
     }
 }
 
-/** The platform's wave, filling [modifier]; still when not [animate]. */
+/**
+ * A brush from [source]'s runtime shader, its uniforms set by the block it's given, or null where the platform can't
+ * run one.
+ */
 @Composable
-internal expect fun HeroWaveLayer(modifier: Modifier, animate: Boolean)
+internal expect fun rememberShaderBrush(source: String): (uniforms: ((name: String, values: FloatArray) -> Unit) -> Unit) -> Brush?
 
-// the foot sinks into HeroDepth from 35% down to 90% opaque at the bottom, eased as a smoothstep
+internal const val SinkStart = 0.35f
+internal const val SinkOpacity = 0.9f
+
+// the foot sinks into HeroDepth from SinkStart down to SinkOpacity at the bottom, eased as a smoothstep
 private val WaveDepth = (0..8).map { it / 8f }.map { y ->
-    val t = ((y - 0.35f) / 0.65f).coerceIn(0f, 1f)
-    y to PlataPalette.HeroDepth.copy(alpha = t * t * (3 - 2 * t) * 0.9f)
+    val t = ((y - SinkStart) / (1 - SinkStart)).coerceIn(0f, 1f)
+    y to PlataPalette.HeroDepth.copy(alpha = t * t * (3 - 2 * t) * SinkOpacity)
 }.toTypedArray()
 
 /** The still wave, where a platform can't draw the live one. */

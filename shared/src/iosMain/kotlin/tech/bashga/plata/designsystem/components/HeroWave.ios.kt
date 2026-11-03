@@ -1,38 +1,38 @@
 package tech.bashga.plata.designsystem.components
 
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.asComposeShader
 import androidx.compose.ui.unit.dp
 import org.jetbrains.skia.RuntimeEffect
 import org.jetbrains.skia.RuntimeShaderBuilder
 
-private val WaveEffect by lazy { RuntimeEffect.makeForShader(WaveSksl) }
+private val effects = mutableMapOf<String, RuntimeEffect>()
 
 @Composable
-internal actual fun HeroWaveLayer(modifier: Modifier, animate: Boolean) {
-    Spacer(modifier.drawWave(rememberWaveClock(animate), rememberWaveBrush()))
-}
-
-@Composable
-private fun rememberWaveBrush(): (Float, Float, Float) -> ShaderBrush {
-    val builder = remember { RuntimeShaderBuilder(WaveEffect) }
-    return { width, height, time ->
-        builder.uniform("size", width, height)
-        HeroWaveDials.uniforms(time, builder::uniform)
+internal actual fun rememberShaderBrush(source: String): (uniforms: ((name: String, values: FloatArray) -> Unit) -> Unit) -> Brush? {
+    val builder = remember(source) { RuntimeShaderBuilder(effects.getOrPut(source) { RuntimeEffect.makeForShader(source) }) }
+    return { uniforms ->
+        uniforms(builder::uniform)
         ShaderBrush(builder.makeShader().asComposeShader())
     }
 }
 
-/** Draws the wave once at launch, under the app, so Skia compiles it to Metal before Home first shows it. */
+/** Draws the hero and the glass once at launch, under the app, so Skia compiles them to Metal before Home shows them. */
 @Composable
 internal fun PrewarmHeroWave() {
-    Spacer(Modifier.size(1.dp).drawWave(remember { mutableStateOf(0f) }, rememberWaveBrush()))
+    val hero = remember { HeroWaveState(mutableFloatStateOf(0f)) }
+    HeroWave(Modifier.size(1.dp), hero)
+    CompositionLocalProvider(LocalHeroWave provides hero) {
+        GlassSurface(Color.Transparent, Modifier.size(1.dp)) {}
+    }
 }
 
 private fun RuntimeShaderBuilder.uniform(name: String, values: FloatArray) = when (values.size) {
