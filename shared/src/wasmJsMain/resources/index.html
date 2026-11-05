@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Plata</title>
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #000; }
+        #device { position: relative; width: 100%; height: 100%; }
+        #screen { position: absolute; inset: 0; }
+        #frame { display: none; }
+
+        /* the frame image is 920×2000 with a transparent 736×1600 screen at (92, 200): an iPhone 17 Pro's 402×874 pt */
+        @media (min-width: 600px) {
+            body { display: flex; align-items: center; justify-content: center; background: #f5f5f7; }
+            #device { width: auto; height: min(1092px, calc(100% - 48px)); aspect-ratio: 920 / 2000; }
+            #screen { inset: 10% 10%; border-radius: 16% / 7.4%; overflow: hidden; background: #000; }
+            #frame { display: block; position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+        }
+    </style>
+    <script type="application/javascript" src="plata.js"></script>
+</head>
+<body>
+<div id="device">
+    <div id="screen"></div>
+    <img id="frame" src="iphone-17-pro.png" alt="" draggable="false">
+</div>
+</body>
+</html>

@@ -268,3 +268,4 @@ Append-only (add, never change or remove what is there; keep existing renders id
 | compare an id | `tools/compare.sh <id>` |
 | run on Android | `./gradlew :androidApp:installDebug && adb shell am start -n tech.bashga.plata/.MainActivity`; `adb shell pm clear tech.bashga.plata` for a first run |
 | run on iOS | see `DESIGN_SYSTEM.md` § App and devices |
+| run in a browser | `./gradlew :shared:wasmJsBrowserDevelopmentRun`; `:shared:wasmJsBrowserDistribution` writes a static site to `shared/build/dist/wasmJs/productionExecutable` |

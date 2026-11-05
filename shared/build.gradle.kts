@@ -24,6 +24,17 @@ kotlin {
     // a desktop window of the app, for Compose Hot Reload (`./gradlew :shared:hotRunJvm`); it never ships
     jvm()
 
+    // the app in a browser tab: `./gradlew :shared:wasmJsBrowserDevelopmentRun`
+    wasmJs {
+        outputModuleName = "plata"
+        browser {
+            commonWebpackConfig {
+                outputFileName = "plata.js"
+            }
+        }
+        binaries.executable()
+    }
+
     android {
        namespace = "tech.bashga.plata.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
