@@ -104,4 +104,6 @@ data class PlataColors(
     val stackedPresenterDim: Color = PlataPalette.Black.copy(alpha = 0.11f),
     val sheetBackdrop: Color = PlataPalette.Black,
     val cardLabelTeal: Color = PlataPalette.CardLabelTeal,
+    /** Behind the Blender renders, whose backgrounds are pure black: anything lighter shows the frame's edge. */
+    val surfaceVideo: Color = PlataPalette.Black,
 )

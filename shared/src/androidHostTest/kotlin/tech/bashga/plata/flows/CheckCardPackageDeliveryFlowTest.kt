@@ -1,8 +1,9 @@
 package tech.bashga.plata.flows
 
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeUp
 import org.junit.Test
 import tech.bashga.plata.data.Address
 import tech.bashga.plata.data.Ambassador
@@ -16,18 +17,23 @@ import tech.bashga.plata.navigation.graph.DeliveryDetailsRoute
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-/** SCREEN-MAP §5.9: DeliveryDetails before AmbassadorAssigned → CardPackaging, scrolled to the end. */
+/** SCREEN-MAP §5.9: DeliveryDetails before AmbassadorAssigned → the unboxing stories, tapped through to the end. */
 class CheckCardPackageDeliveryFlowTest : DeliveryFlowTest() {
     @Test
-    fun packageSheetScrollsAndClosingItNeverDeliversTheCard() {
+    fun packageStoriesPlayToTheEndAndClosingThemNeverDeliversTheCard() {
         launch(cardComing, HomeTab)
         navigate(DeliveryDetailsRoute)
         waitFor("Ambassador to be assigned")
 
         tap("Check card package upon delivery")
         waitFor("Secure packaging", substring = true)
-        repeat(3) { rule.onNode(hasTestTag("packaging-scroll"), useUnmergedTree = true).performTouchInput { swipeUp() } }
-        rule.waitForIdle()
+        // three steps, plus one for a tap the sheet swallows while it is still sliding in
+        repeat(4) {
+            if (rule.onAllNodes(hasText("Contact support")).fetchSemanticsNodes().isEmpty()) {
+                rule.onNode(hasTestTag("stories-captions"), useUnmergedTree = true).performTouchInput { click(center.copy(x = width * 0.8f)) }
+                rule.waitForIdle()
+            }
+        }
         waitFor("Contact support")
 
         advanceBackend(10_000)

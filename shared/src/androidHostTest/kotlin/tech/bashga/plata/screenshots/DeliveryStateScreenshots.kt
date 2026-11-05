@@ -38,6 +38,7 @@ import tech.bashga.plata.screens.delivery.Reward
 import tech.bashga.plata.screens.delivery.RewardAmbassadorContent
 import tech.bashga.plata.screens.delivery.RewardAmbassadorState
 import tech.bashga.plata.screens.delivery.ScheduleDeliveryIntroContent
+import tech.bashga.plata.screens.delivery.UnboxingStoriesContent
 import tech.bashga.plata.screens.delivery.TourPage
 import tech.bashga.plata.screens.delivery.WelcomeCardContent
 import tech.bashga.plata.screens.delivery.WelcomeCardState
@@ -139,6 +140,18 @@ class DeliveryStateScreenshots : ScreenshotTest() {
         under = listOf(detailsSheet()),
         setup = { scrollBy(10_000.dp, "packaging-scroll") },
     ) { CardPackagingContent(onAction = {}) }
+
+    // the stories have no source screenshot: one render per step and the end, reviewed by eye
+    @Test fun `unboxing-stories-1`() = unboxingStories("1", 1_500)
+
+    @Test fun `unboxing-stories-2`() = unboxingStories("2", 5_000)
+
+    @Test fun `unboxing-stories-3`() = unboxingStories("3", 9_000)
+
+    @Test fun `unboxing-stories-end`() = unboxingStories("end", 16_000)
+
+    private fun unboxingStories(step: String, millis: Long) =
+        screenState("unboxing-stories-$step", presentation = Presentation.Sheet, under = listOf(detailsSheet()), clockMillis = millis) { UnboxingStoriesContent(onAction = {}) }
 
     @Test fun `586ac28a`() = screenState("586ac28a", presentation = Presentation.Sheet, under = listOf(detailsSheet())) {
         RescheduleReasonContent(RescheduleReasonState(), onAction = {})

@@ -11,7 +11,6 @@ import tech.bashga.plata.designsystem.components.TabBarTab
 import tech.bashga.plata.navigation.AppNavigator
 import tech.bashga.plata.navigation.Presentation
 import tech.bashga.plata.navigation.screen
-import tech.bashga.plata.screens.delivery.CardPackagingScreen
 import tech.bashga.plata.screens.delivery.DeliveryAddressScreen
 import tech.bashga.plata.screens.delivery.DeliveryDetailsScreen
 import tech.bashga.plata.screens.delivery.DeliveryTimeScreen
@@ -20,6 +19,7 @@ import tech.bashga.plata.screens.delivery.ProductTourScreen
 import tech.bashga.plata.screens.delivery.RescheduleReasonScreen
 import tech.bashga.plata.screens.delivery.RewardAmbassadorScreen
 import tech.bashga.plata.screens.delivery.ScheduleDeliveryIntroScreen
+import tech.bashga.plata.screens.delivery.UnboxingStoriesScreen
 import tech.bashga.plata.screens.delivery.WelcomeCardScreen
 import tech.bashga.plata.screens.support.SUPPORT_TEL_URI
 
@@ -98,7 +98,7 @@ fun NavGraphBuilder.deliveryGraph(nav: AppNavigator, repository: AppRepository) 
     }
     screen<CardPackagingRoute>(Presentation.Sheet) {
         val uriHandler = LocalUriHandler.current
-        CardPackagingScreen(
+        UnboxingStoriesScreen(
             onCallSupport = { uriHandler.openUri(SUPPORT_TEL_URI) },
             onContactSupport = { nav.navigate(SupportCoverRoute) },
             onClose = { nav.back() },
