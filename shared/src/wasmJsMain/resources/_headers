@@ -1,0 +1,6 @@
+# Netlify headers, copied into the web build so they apply however the folder is uploaded
+
+# webpack names the wasm files by content hash, so a changed build gets new names
+/*.wasm
+  Content-Type: application/wasm
+  Cache-Control: public, max-age=31536000, immutable

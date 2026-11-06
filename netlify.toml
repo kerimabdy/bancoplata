@@ -1,0 +1,5 @@
+# The web build needs the Android SDK, which Netlify's build image lacks, so build locally with ./build-web.sh
+# and deploy the folder: `netlify deploy --prod` from this directory uploads it as is.
+[build]
+  publish = "shared/build/dist/wasmJs/productionExecutable"
+  command = ""
