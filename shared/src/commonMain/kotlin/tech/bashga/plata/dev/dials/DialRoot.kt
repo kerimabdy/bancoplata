@@ -47,8 +47,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToDownIgnoreConsumed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
@@ -88,20 +90,21 @@ private fun DrawerPresentation.next(dragUp: Boolean): DrawerPresentation = when 
 }
 
 /**
- * DialKit's drawer over [content]: a draggable button, or a two-finger tap anywhere, opens a sheet of every
- * [DialStore] panel from the bottom. The sheet comes at a medium height and drags up to tall or down to close; a tap
- * outside closes it.
+ * DialKit's drawer over [content]: a two-finger tap anywhere (a two-finger click on a trackpad), or the draggable
+ * button when [showButton] is set, opens a sheet of every [DialStore] panel from the bottom. The sheet comes at a
+ * medium height and drags up to tall or down to close; a tap outside closes it.
  */
 @Composable
 fun DialRoot(
     modifier: Modifier = Modifier,
     position: DialPosition = DialPosition.BottomRight,
+    showButton: Boolean = false,
     defaultOpen: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val panels = DialStore.panels
     var openRequest by remember { mutableIntStateOf(0) }
-    BoxWithConstraints(modifier.fillMaxSize().pointerInput(Unit) { detectTwoFingerTap { openRequest++ } }) {
+    BoxWithConstraints(modifier.fillMaxSize().pointerInput(Unit) { detectTwoFingerTap { openRequest++ } }.pointerInput(Unit) { detectSecondaryClick { openRequest++ } }) {
         content()
         if (panels.isEmpty()) return@BoxWithConstraints
         val scope = rememberCoroutineScope()
@@ -165,7 +168,7 @@ fun DialRoot(
                 }
             }
         }
-        AnimatedVisibility(!overlayShown, enter = fadeIn(swiftSpring(0.22f, 0.9f)), exit = fadeOut(swiftSpring(0.22f, 0.9f))) {
+        AnimatedVisibility(showButton && !overlayShown, enter = fadeIn(swiftSpring(0.22f, 0.9f)), exit = fadeOut(swiftSpring(0.22f, 0.9f))) {
             DialFab(position, maxWidth, maxHeight) { present(DrawerPresentation.Medium) }
         }
     }
@@ -372,6 +375,17 @@ private fun DialToolbar(panel: DialPanel, modifier: Modifier = Modifier) {
 
 // one tap of two fingers together: quick, held still, no third finger
 private const val TwoFingerTapMillis = 400L
+
+// a trackpad's two-finger click reaches desktop and the browser as one mouse pointer's secondary button, which never counts as a down
+private suspend fun PointerInputScope.detectSecondaryClick(onClick: () -> Unit) = awaitPointerEventScope {
+    while (true) {
+        val event = awaitPointerEvent(PointerEventPass.Initial)
+        if (event.type == PointerEventType.Press && event.buttons.isSecondaryPressed) {
+            event.changes.forEach { it.consume() }
+            onClick()
+        }
+    }
+}
 
 /**
  * Watches every touch on the way down without taking it, so the app underneath works as before. Only a finished

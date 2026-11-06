@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.MouseButton
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -68,10 +71,10 @@ class DialKitTest {
         panel.action("replay") {}
     }
 
-    private fun show(open: Boolean) = rule.setContent {
+    private fun show(open: Boolean, button: Boolean = false) = rule.setContent {
         PlataTheme {
             ProvideSafeArea(PlataSafeArea.IPhone) {
-                DialRoot(defaultOpen = open) {
+                DialRoot(defaultOpen = open, showButton = button) {
                     Canvas(Modifier.fillMaxSize().background(Color(0xFF1A1420)).clickable { appTaps++ }) {
                         val gap = size.width / 17
                         for (x in 1..16) for (y in 1..40) drawCircle(Color.White.copy(alpha = 0.8f), 2.5f, Offset(x * gap, y * gap))
@@ -83,13 +86,13 @@ class DialKitTest {
 
     @Test
     fun closedShowsTheButton() {
-        show(open = false)
+        show(open = false, button = true)
         rule.onRoot().captureRoboImage("build/dials/closed.png")
     }
 
     @Test
     fun opensFromTheButtonAndCloses() {
-        show(open = false)
+        show(open = false, button = true)
         rule.mainClock.autoAdvance = false
         rule.onRoot().performTouchInput { click(Offset(width - 36f * density, height - 36f * density - 34f * density)) }
         listOf(60L, 120L, 400L).forEach { ms ->
@@ -100,7 +103,7 @@ class DialKitTest {
 
     @Test
     fun buttonKeepsItsPlaceThroughOpenAndClose() {
-        show(open = false)
+        show(open = false, button = true)
         val fab = Offset(393f - 36f, 852f - 36f - 34f)
         rule.onRoot().performTouchInput {
             down(fab * density)
@@ -136,6 +139,26 @@ class DialKitTest {
         rule.onRoot().performTouchInput { click(Offset(width / 2f, height * 0.2f)) }
         rule.waitForIdle()
         assertEquals(1, appTaps)
+    }
+
+    @Test
+    fun closedHidesTheButtonByDefault() {
+        show(open = false)
+        rule.onRoot().captureRoboImage("build/dials/closed-no-button.png")
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun secondaryClickOpensWithoutClickingTheApp() {
+        show(open = false)
+        rule.onRoot().performMouseInput {
+            moveTo(center)
+            press(MouseButton.Secondary)
+            release(MouseButton.Secondary)
+        }
+        rule.waitForIdle()
+        assertEquals(0, appTaps)
+        rule.onNodeWithText("Version 1").assertExists()
     }
 
     @Test
