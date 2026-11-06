@@ -1,6 +1,7 @@
 package tech.bashga.plata.designsystem.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -64,8 +67,10 @@ fun TextField(
     val colors = PlataTheme.colors
     val typography = PlataTheme.typography
     val spacing = PlataTheme.spacing
+    val focus = focusRequester ?: remember { FocusRequester() }
     Row(
         modifier
+            .focusOnTap(focus, enabled = !readOnly)
             .heightIn(min = PlataTheme.sizes.rowSingle)
             .background(
                 if (surface == TextFieldSurface.White) colors.surfaceCard else colors.surfaceBackground,
@@ -82,7 +87,7 @@ fun TextField(
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier,
+                modifier = Modifier.focusRequester(focus),
                 readOnly = readOnly,
                 textStyle = typography.body.merge(color = colors.textPrimary),
                 singleLine = true,
@@ -99,6 +104,19 @@ fun TextField(
             )
         }
         trailing?.invoke()
+    }
+}
+
+/** A tap anywhere in a field's box focuses [focus] and raises the keyboard, not only a tap on the text line itself. */
+@Composable
+internal fun Modifier.focusOnTap(focus: FocusRequester, enabled: Boolean = true): Modifier {
+    if (!enabled) return this
+    val keyboard = LocalSoftwareKeyboardController.current
+    return pointerInput(focus, keyboard) {
+        detectTapGestures {
+            focus.requestFocus()
+            keyboard?.show()
+        }
     }
 }
 

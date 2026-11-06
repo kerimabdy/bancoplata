@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -61,6 +62,7 @@ fun AmountField(
     val typography = PlataTheme.typography
     val spacing = PlataTheme.spacing
     val shape = ContinuousRoundedShape(PlataTheme.radii.xl)
+    val focus = focusRequester ?: remember { FocusRequester() }
     val amountInput: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             PlataText("$prefix ", typography.title3, colors.textPrimary, maxLines = 1)
@@ -76,7 +78,7 @@ fun AmountField(
                     onValueChange = onAmountChange,
                     // an empty field is otherwise 0 wide and clips the real caret
                     modifier = Modifier.width(IntrinsicSize.Min).widthIn(min = CaretWidth)
-                        .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
+                        .focusRequester(focus),
                     textStyle = typography.title3.merge(color = colors.textPrimary),
                     singleLine = true,
                     cursorBrush = SolidColor(if (amount.isEmpty()) colors.controlOff else colors.textPrimary),
@@ -97,6 +99,7 @@ fun AmountField(
     when (layout) {
         AmountFieldLayout.Stacked -> Column(
             modifier
+                .focusOnTap(focus)
                 .background(colors.surfaceCard, shape)
                 .padding(PaddingValues(start = spacing.s16, end = spacing.s16, top = spacing.s16, bottom = 14.dp)),
             // 4 under the amount puts the 13pt line where the source has it and the card at 77 (40d2b403)
@@ -110,6 +113,7 @@ fun AmountField(
         }
         AmountFieldLayout.SingleRow -> Row(
             modifier
+                .focusOnTap(focus)
                 .background(colors.surfaceCard, shape)
                 .heightIn(min = PlataTheme.sizes.rowSingle)
                 .padding(horizontal = spacing.s20),

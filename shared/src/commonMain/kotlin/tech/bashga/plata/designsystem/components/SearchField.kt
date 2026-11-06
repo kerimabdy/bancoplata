@@ -53,6 +53,7 @@ fun SearchField(
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val colors = PlataTheme.colors
     val body = PlataTheme.typography.body
+    val focus = focusRequester ?: remember { FocusRequester() }
     Row(
         modifier.height(PlataTheme.sizes.search),
         horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s12),
@@ -62,6 +63,7 @@ fun SearchField(
             Modifier
                 .weight(1f)
                 .height(PlataTheme.sizes.search)
+                .focusOnTap(focus)
                 .background(colors.surfaceSearch, ContinuousRoundedShape(PlataTheme.radii.sm))
                 .padding(horizontal = SearchInset),
             horizontalArrangement = Arrangement.spacedBy(PlataTheme.spacing.s4),
@@ -71,7 +73,7 @@ fun SearchField(
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.weight(1f).then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier),
+                modifier = Modifier.weight(1f).focusRequester(focus),
                 textStyle = body.merge(color = colors.textPrimary),
                 singleLine = true,
                 cursorBrush = SolidColor(colors.accent),
