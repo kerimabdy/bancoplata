@@ -18,7 +18,7 @@ const val AMBASSADOR_DELAY_MILLIS = 10_000L
 const val ASSIGNED_AMBASSADOR = "Carlos"
 const val PESOS_PER_DOLLAR_CENTS = 18_76L
 
-enum class AuthStep { ScanCardQr, CreatePasscode, EnableFaceId }
+enum class AuthStep { CreatePasscode, EnableFaceId }
 
 /** What a transfer moved, for TransferResult. Amounts in cents of [currency]; balances are `ownBalance` in MXN cents. */
 data class TransferReceipt(
@@ -91,15 +91,10 @@ class AppRepository(
 
     // Session
 
-    /** Otp accepted (any code): saves the phone and says where auth goes next. */
+    /** Otp accepted (any code): saves the phone, links the device and says where auth goes next. */
     fun confirmOtp(phone: String): AuthStep {
-        update { it.copy(session = it.session.copy(phone = phone)) }
-        val session = snapshot.session
-        return when {
-            session.deviceLinked && session.passcode.isNotEmpty() -> AuthStep.EnableFaceId
-            session.deviceLinked -> AuthStep.CreatePasscode
-            else -> AuthStep.ScanCardQr
-        }
+        update { it.copy(session = it.session.copy(phone = phone, deviceLinked = true)) }
+        return if (snapshot.session.passcode.isNotEmpty()) AuthStep.EnableFaceId else AuthStep.CreatePasscode
     }
 
     fun qrScanned() = update { it.copy(session = it.session.copy(deviceLinked = true)) }

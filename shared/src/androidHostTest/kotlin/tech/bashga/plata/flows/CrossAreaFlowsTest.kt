@@ -10,7 +10,6 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -18,7 +17,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -122,8 +120,6 @@ class CrossAreaFlowsTest {
         tap("Continue")
         waitFor("Confirmation")
         rule.onNodeWithTag("otp").performTextInput("1234")
-        waitFor("Scan QR")
-        rule.onNodeWithTag("viewfinder").performTouchInput { longClick() }
         waitFor("Create passcode")
         rule.tapDigits("123456")
         waitFor("Confirm passcode")

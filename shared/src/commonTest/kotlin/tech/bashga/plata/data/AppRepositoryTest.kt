@@ -48,11 +48,10 @@ class AppRepositoryTest {
     }
 
     @Test
-    fun firstLoginGoesThroughQrAndPasscode() = runTest {
+    fun firstLoginGoesThroughPasscode() = runTest {
         val repo = repository()
-        assertEquals(AuthStep.ScanCardQr, repo.confirmOtp("5512345678"))
-        repo.qrScanned()
         assertEquals(AuthStep.CreatePasscode, repo.confirmOtp("5512345678"))
+        assertTrue(repo.snapshot.session.deviceLinked)
         repo.savePasscode("123456")
         assertEquals(AuthStep.EnableFaceId, repo.confirmOtp("5512345678"))
         repo.logIn(faceId = false)
@@ -65,7 +64,6 @@ class AppRepositoryTest {
     fun logOutKeepsPhonePasscodeAndDeviceLink() = runTest {
         val repo = repository()
         repo.confirmOtp("5512345678")
-        repo.qrScanned()
         repo.savePasscode("123456")
         repo.logIn(faceId = true)
         repo.logOut()
