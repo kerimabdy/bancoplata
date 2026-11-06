@@ -28,9 +28,6 @@ object CardMotion {
 
     val pressedScale = 0.97f
 
-    // the card sinks like a cell in the App Store's Today feed rather than fading
-    val cardPressedScale = 0.96f
-
     fun pressInSpring(): SpringSpec<Float> = timeSpring(0.25f, 0f, 0.0001f)
 
     fun pressOutSpring(): SpringSpec<Float> = timeSpring(0.3f, 0f, 0.0001f)

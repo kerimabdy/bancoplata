@@ -149,6 +149,14 @@ private class PressScaleNode(var enabled: Boolean, var pressedScale: Float, var 
     }
 }
 
+/** A tile's press: it sinks like a [pressScale] button instead of fading. Chain it before the tile's background and clip. */
+fun Modifier.tilePressable(onClick: (() -> Unit)?, onClickLabel: String? = null, role: Role? = Role.Button): Modifier =
+    if (onClick == null) {
+        this
+    } else {
+        pressScale().pressable(role = role, onClickLabel = onClickLabel, indication = null, onClick = onClick)
+    }
+
 fun Modifier.pressable(
     enabled: Boolean = true,
     role: Role? = Role.Button,

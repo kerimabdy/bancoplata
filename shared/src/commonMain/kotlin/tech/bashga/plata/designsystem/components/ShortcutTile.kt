@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.GradientText
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.Msi
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -123,9 +123,9 @@ fun ShortcutTile(
         }
     }
     if (glass) {
-        GlassSurface(colors.glassTile, frame, PlataTheme.radii.xl, colors.glassTileBorder, onClick, content = tile)
+        GlassSurface(colors.glassTile, frame.tilePressable(onClick), PlataTheme.radii.xl, colors.glassTileBorder, content = tile)
     } else {
-        Box(frame.background(colors.surfaceCard, shape).then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)) { tile() }
+        Box(frame.tilePressable(onClick).background(colors.surfaceCard, shape)) { tile() }
     }
 }
 

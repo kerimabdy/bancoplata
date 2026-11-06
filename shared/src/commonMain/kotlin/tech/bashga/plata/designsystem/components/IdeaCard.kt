@@ -91,7 +91,7 @@ fun IdeaCard(
     Box(
         modifier
             // before the clip, so the rounded corners shrink with the card
-            .then(if (onClick != null) Modifier.pressScale(pressedScale = CardMotion.cardPressedScale, state = pressState) else Modifier)
+            .then(if (onClick != null) Modifier.pressScale(state = pressState) else Modifier)
             .layout { measurable, constraints ->
                 // only the pass that is drawn: the lookahead pass's width is where it lands, and two values a frame would
                 // invalidate each other's readers forever

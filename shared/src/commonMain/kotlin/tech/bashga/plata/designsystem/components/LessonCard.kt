@@ -24,7 +24,7 @@ import plata.shared.generated.resources.raster_lesson_stocks_etfs
 import plata.shared.generated.resources.raster_lesson_why_investing
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
@@ -55,9 +55,9 @@ fun LessonCard(
     val compact = size == LessonCardSize.Compact
     Box(
         modifier
+            .tilePressable(onClick)
             .clip(ContinuousRoundedShape(PlataTheme.radii.xl))
             .background(colors.surfaceCard)
-            .pressable(onClick = onClick)
             .then(if (compact) Modifier else Modifier.height(175.dp)),
     ) {
         Row(if (compact) Modifier else Modifier.fillMaxHeight()) {

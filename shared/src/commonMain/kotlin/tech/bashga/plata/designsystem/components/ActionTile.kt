@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.icons.TopUp
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -40,8 +40,8 @@ fun ActionTile(
     val colors = PlataTheme.colors
     Column(
         modifier
+            .tilePressable(onClick)
             .background(colors.surfaceCard, ContinuousRoundedShape(PlataTheme.radii.xl))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .padding(PaddingValues(top = 18.dp, bottom = 15.dp)),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

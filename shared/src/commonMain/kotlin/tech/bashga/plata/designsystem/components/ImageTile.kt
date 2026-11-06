@@ -26,7 +26,7 @@ import plata.shared.generated.resources.raster_tile_nike
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.ProgressiveBlurImage
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 enum class ImageTileFooter { Minimum, Percent }
@@ -51,8 +51,8 @@ fun ImageTile(
     Box(
         modifier
             .size(130.dp, 164.dp)
-            .clip(ContinuousRoundedShape(PlataTheme.radii.md))
-            .pressable(onClick = onClick),
+            .tilePressable(onClick)
+            .clip(ContinuousRoundedShape(PlataTheme.radii.md)),
     ) {
         ProgressiveBlurImage(image, Modifier.matchParentSize(), from = 0.45f, radius = 12.dp)
         if (logo != null) Box(Modifier.padding(PlataTheme.spacing.s12)) { logo() }

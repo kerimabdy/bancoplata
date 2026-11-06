@@ -91,6 +91,7 @@ import tech.bashga.plata.designsystem.foundation.PlataSafeArea
 import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.foundation.backdropSource
 import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.CalendarGrid
 import tech.bashga.plata.designsystem.icons.Msi
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -372,7 +373,7 @@ private fun LiveFeed(state: HomeState, onAction: (HomeAction) -> Unit) {
         CreditSummaryCard(
             formatMoney(state.available),
             "Available in Plata Crédito",
-            Modifier.pressable(onClickLabel = "Plata Crédito") { onAction(HomeAction.OpenCredit) },
+            Modifier.tilePressable({ onAction(HomeAction.OpenCredit) }, onClickLabel = "Plata Crédito"),
             status = state.month.creditStatus.homeLabel,
             rowLabel = null,
         ) {

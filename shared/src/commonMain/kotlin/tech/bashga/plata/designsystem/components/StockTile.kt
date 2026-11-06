@@ -16,7 +16,7 @@ import plata.shared.generated.resources.Res
 import plata.shared.generated.resources.raster_logo_microsoft
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /**
@@ -35,8 +35,8 @@ fun StockTile(
     Column(
         modifier
             .height(136.dp)
+            .tilePressable(onClick)
             .background(PlataTheme.colors.surfaceBackground, ContinuousRoundedShape(PlataTheme.radii.lg))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .padding(top = PlataTheme.spacing.s16),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

@@ -24,6 +24,7 @@ import plata.shared.generated.resources.raster_tile_santander
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
 import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.InfoFill
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -57,8 +58,8 @@ fun MethodCard(
     }
     Column(
         modifier
+            .tilePressable(onClick)
             .background(background, ContinuousRoundedShape(PlataTheme.radii.xl))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .padding(spacing.cardPadding),
         verticalArrangement = Arrangement.spacedBy(spacing.s20),
     ) {

@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.ClappingHands
 import tech.bashga.plata.designsystem.icons.DollarCircle
 import tech.bashga.plata.designsystem.icons.PlataIcons
@@ -51,9 +51,9 @@ fun ChoiceCard(
     val radius: Dp = if (layout == ChoiceCardLayout.Row) PlataTheme.radii.xl else PlataTheme.radii.lg
     val shape = ContinuousRoundedShape(radius)
     val frame = modifier
+        .tilePressable(onClick)
         .background(colors.surfaceCard, shape)
         .then(if (selected) Modifier.border(2.dp, colors.accent, shape) else Modifier)
-        .pressable(onClick = onClick)
     when (layout) {
         ChoiceCardLayout.Tile -> Column(
             frame.height(70.dp).padding(horizontal = PlataTheme.spacing.s12, vertical = 11.dp),

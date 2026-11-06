@@ -25,7 +25,7 @@ import plata.shared.generated.resources.raster_promo_friend
 import plata.shared.generated.resources.raster_promo_investing
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 enum class PromoCardLayout { Hero, Banner }
@@ -60,8 +60,8 @@ fun PromoCard(
     val shape = ContinuousRoundedShape(PlataTheme.radii.xl)
     val card = modifier
         .fillMaxWidth()
+        .tilePressable(onClick)
         .clip(shape)
-        .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
     when (layout) {
         PromoCardLayout.Hero -> Column(
             card

@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.ArrowUpRightDuotone
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.icons.PlusOutlineDuotone
@@ -93,9 +93,9 @@ fun SummaryCard(
         }
     }
     if (glass) {
-        GlassSurface(colors.glassTile, modifier.fillMaxWidth(), PlataTheme.radii.xl, colors.glassTileBorder, onClick) { card(Modifier.fillMaxWidth()) }
+        GlassSurface(colors.glassTile, modifier.fillMaxWidth().tilePressable(onClick), PlataTheme.radii.xl, colors.glassTileBorder) { card(Modifier.fillMaxWidth()) }
     } else {
-        card(modifier.fillMaxWidth().background(colors.surfaceCard, shape).then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier))
+        card(modifier.fillMaxWidth().tilePressable(onClick).background(colors.surfaceCard, shape))
     }
 }
 

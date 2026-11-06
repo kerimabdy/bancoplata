@@ -20,7 +20,7 @@ import plata.shared.generated.resources.raster_logo_booking
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.GradientText
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.theme.PlataTheme
 
 /** [Percent]: the cashback rate in the brand gradient, top-aligned with the name. [Minimum]: an amount over [PartnerCard]'s caption. */
@@ -44,8 +44,8 @@ fun PartnerCard(
     val shape = ContinuousRoundedShape(PlataTheme.radii.xl)
     Row(
         modifier
+            .tilePressable(onClick)
             .background(colors.surfaceCard, shape)
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .heightIn(min = PlataTheme.sizes.rowAsset)
             .padding(horizontal = spacing.cardPadding, vertical = spacing.s12),
         horizontalArrangement = Arrangement.spacedBy(spacing.rowGap),

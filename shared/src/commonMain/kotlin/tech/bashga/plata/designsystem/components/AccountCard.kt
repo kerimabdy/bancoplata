@@ -18,7 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import tech.bashga.plata.designsystem.foundation.ContinuousRoundedShape
 import tech.bashga.plata.designsystem.foundation.PlataText
-import tech.bashga.plata.designsystem.foundation.pressable
+import tech.bashga.plata.designsystem.foundation.tilePressable
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.icons.PlataWordmark
 import tech.bashga.plata.designsystem.theme.PlataTheme
@@ -36,8 +36,8 @@ fun AccountCard(
     val spacing = PlataTheme.spacing
     Row(
         modifier
+            .tilePressable(onClick)
             .background(colors.surfaceCard, ContinuousRoundedShape(PlataTheme.radii.xl))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
             .heightIn(min = PlataTheme.sizes.rowAsset)
             .padding(horizontal = spacing.cardPadding, vertical = spacing.s12),
         horizontalArrangement = Arrangement.spacedBy(spacing.rowGap),
