@@ -294,9 +294,10 @@ object PlataIcons {
     }
 
     val DoubleChevron: ImageVector by lazy {
+        // shifted 1.3 right: the solid first chevron weighs it left, so centred geometry reads off-centre
         plataGlyph("double-chevron") {
-            stroke("M 5.19 5.93 L 11.53 10.71 Q 13.29 12.03 11.53 13.35 L 5.19 18.12 Q 3.43 19.44 3.43 17.24 L 3.43 6.81 Q 3.43 4.61 5.19 5.93 Z", width = 2f)
-            stroke("M 10.97 9 L 10.97 6.81 Q 10.97 4.61 12.71 5.96 L 18.83 10.68 Q 20.57 12.03 18.83 13.38 L 12.71 18.09 Q 10.97 19.44 10.97 17.24 L 10.97 15.06", width = 2f)
+            stroke("M 6.49 5.93 L 12.83 10.71 Q 14.59 12.03 12.83 13.35 L 6.49 18.12 Q 4.73 19.44 4.73 17.24 L 4.73 6.81 Q 4.73 4.61 6.49 5.93 Z", width = 2f)
+            stroke("M 12.27 9 L 12.27 6.81 Q 12.27 4.61 14.01 5.96 L 20.13 10.68 Q 21.87 12.03 20.13 13.38 L 14.01 18.09 Q 12.27 19.44 12.27 17.24 L 12.27 15.06", width = 2f)
         }
     }
 
