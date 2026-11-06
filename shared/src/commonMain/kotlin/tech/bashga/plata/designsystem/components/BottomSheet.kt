@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -32,6 +35,7 @@ import tech.bashga.plata.designsystem.icons.DoubleChevronDuotone
 import tech.bashga.plata.designsystem.icons.PhoneHandset
 import tech.bashga.plata.designsystem.icons.PlataIcons
 import tech.bashga.plata.designsystem.theme.PlataTheme
+import tech.bashga.plata.navigation.swipeToDismiss
 
 /** [Leading]: 20 bold title on the left (0b2e699a, 99ceac12). [Center]: 17 semibold title centred (78f0c567). */
 enum class BottomSheetAlign { Leading, Center }
@@ -86,7 +90,8 @@ fun BottomSheet(
 
 /**
  * The 50% black backdrop behind a BottomSheet or Dialog, filling its parent. Tapping it calls [onDismiss];
- * [content] is laid out in a Box ([contentAlignment] BottomCenter for sheets and dialogs).
+ * [content] is laid out in a Box ([contentAlignment] BottomCenter for sheets and dialogs), and bottom content can be
+ * dragged down to dismiss it like a page sheet.
  */
 @Composable
 fun ModalScrim(
@@ -100,13 +105,19 @@ fun ModalScrim(
     if (motion != null) motion.slides = true
     val progress = motion?.progress ?: { 1f }
     val back = motion?.back ?: { 0f }
+    // let taps through while the scrim fades out, so the screen under it answers straight away
+    val leaving = motion?.leaving?.invoke() == true
+    // reopened while still fading out, the same scrim comes back: start it undragged
+    val presentation = motion?.presentation?.invoke()
+    var drag by remember(presentation) { mutableFloatStateOf(0f) }
+    val bottom = contentAlignment == Alignment.BottomCenter
     Box(
         modifier
             .fillMaxSize()
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
+            .then(if (leaving) Modifier else Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)),
         contentAlignment = contentAlignment,
     ) {
-        Box(Modifier.matchParentSize().graphicsLayer { alpha = progress() }.background(PlataTheme.colors.scrim))
+        Box(Modifier.matchParentSize().graphicsLayer { alpha = progress() * (1f - drag) }.background(PlataTheme.colors.scrim))
         // swallow taps on the sheet itself so they don't reach the scrim
         Box(
             Modifier
@@ -116,6 +127,7 @@ fun ModalScrim(
                     scaleY = scaleX
                     transformOrigin = TransformOrigin(0.5f, 1f)
                 }
+                .then(if (bottom) Modifier.swipeToDismiss(onDismiss, { drag = it }, resetKey = presentation, dismissed = motion?.leaving) else Modifier)
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             content = content,
         )
@@ -126,7 +138,12 @@ fun ModalScrim(
  * Provided by the overlay host so a bottom [ModalScrim] slides its content up instead of the whole layer fading, and
  * shrinks it toward the bottom edge with Android's predictive [back] gesture (0–1).
  */
-class ModalMotion(val progress: () -> Float, val back: () -> Float = { 0f }) {
+class ModalMotion(
+    val progress: () -> Float,
+    val back: () -> Float = { 0f },
+    val leaving: () -> Boolean = { false },
+    val presentation: () -> Int = { 0 },
+) {
     var slides = false
         internal set
 }

@@ -193,7 +193,12 @@ private fun OverlayFrame(request: OverlayRequest) {
     if (hidden) return
     when (request.kind) {
         OverlayKind.Plain -> {
-            val motion = remember(request) { ModalMotion(progress = { request.progress.value }, back = { request.back.progress.value }) }
+            val motion = remember(request) { ModalMotion(
+                    progress = { request.progress.value },
+                    back = { request.back.progress.value },
+                    leaving = { !request.visible },
+                    presentation = { request.presentations },
+                ) }
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (motion.slides) 1f else request.progress.value }) {
                 CompositionLocalProvider(LocalModalMotion provides motion) { request.content() }
             }
@@ -284,6 +289,7 @@ private class SheetDrag(private val rubberLimit: Float, private val dismissVeloc
     var height = 0
     var coordinates: LayoutCoordinates? = null
     var onDismiss: () -> Unit = {}
+    var dismissed: (() -> Boolean)? = null
     var onDrag: (Float) -> Unit = {}
     var onThreshold: () -> Unit = {}
     private var raw = 0f
@@ -314,6 +320,17 @@ private class SheetDrag(private val rubberLimit: Float, private val dismissVeloc
         settle?.cancel()
         settle = scope.launch {
             if (offset > 0f && (pastThreshold || velocity > dismissVelocity)) {
+                val accepted = dismissed
+                if (accepted != null) {
+                    // dismiss as the fling starts, so the host's exit runs alongside it instead of after it
+                    onDismiss()
+                    val flyOff = launch { springTo(height.toFloat(), velocity) }
+                    repeat(3) { withFrameNanos {} }
+                    if (accepted()) return@launch
+                    flyOff.cancel()
+                    springTo(0f, 0f)
+                    return@launch
+                }
                 springTo(height.toFloat(), velocity)
                 val top = coordinates?.takeIf { it.isAttached }?.positionInRoot()?.y
                 onDismiss()
@@ -345,13 +362,20 @@ private class SheetDrag(private val rubberLimit: Float, private val dismissVeloc
 /**
  * Drag a sheet down (or overscroll its content at the top) to dismiss it, as iOS page sheets do. [onDrag] gets how far
  * down it is as a fraction of its height, so the presenter behind can follow it. A new [resetKey] puts it back at rest.
+ * With [dismissed], [onDismiss] runs as soon as the release commits, and the sheet springs back if [dismissed] stays false.
  */
 @Composable
-internal fun Modifier.swipeToDismiss(onDismiss: () -> Unit, onDrag: (Float) -> Unit = {}, resetKey: Any? = null): Modifier {
+internal fun Modifier.swipeToDismiss(
+    onDismiss: () -> Unit,
+    onDrag: (Float) -> Unit = {},
+    resetKey: Any? = null,
+    dismissed: (() -> Boolean)? = null,
+): Modifier {
     val density = LocalDensity.current
     val sheet = remember(resetKey, density) { with(density) { SheetDrag(RubberBandLimit.toPx(), DismissVelocity.toPx()) } }
     val haptics = LocalHapticFeedback.current
     sheet.onDismiss = onDismiss
+    sheet.dismissed = dismissed
     sheet.onDrag = onDrag
     sheet.onThreshold = { haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
     val scope = rememberCoroutineScope()
