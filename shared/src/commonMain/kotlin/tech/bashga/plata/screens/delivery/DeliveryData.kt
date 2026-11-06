@@ -59,6 +59,10 @@ internal fun geocode(query: String): List<Place> {
     }.take(5)
 }
 
+/** What the empty search lists before anything is typed: a spread of the places the geocoder knows. */
+internal val examplePlaces: List<Place> = listOf("Av. Río Mixcoac 25", "Calle Durango 263", "Av. Río San Joaquín 498", "Av. Río Churubusco 1050", "Av. Río Hondo 12")
+    .map { street -> places.first { it.address.street == street } }
+
 internal val Address.line: String get() = "$street, $area"
 
 internal val Address.place: Place? get() = places.firstOrNull { it.address == this }

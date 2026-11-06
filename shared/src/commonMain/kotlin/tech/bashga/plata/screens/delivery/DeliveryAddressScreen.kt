@@ -62,7 +62,7 @@ data class DeliveryAddressState(
     val address: Address? = null,
     val details: String = "",
 ) {
-    internal val results: List<Place> get() = geocode(query)
+    internal val results: List<Place> get() = if (query.isBlank()) examplePlaces else geocode(query)
 }
 
 sealed interface DeliveryAddressAction {

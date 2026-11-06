@@ -39,6 +39,13 @@ class DeliveryStateTest {
     }
 
     @Test
+    fun emptySearchListsExampleAddresses() {
+        assertEquals(examplePlaces, DeliveryAddressState().results)
+        assertEquals(5, examplePlaces.distinct().size)
+        assertEquals(geocode("durango"), DeliveryAddressState(query = "durango").results)
+    }
+
+    @Test
     fun addressSearchPickThenCancelReturnsToTheMap() {
         val picked = geocode("Av Rio").first().address
         val searching = DeliveryAddressState().reduce(DeliveryAddressAction.Query("Av Rio"))
