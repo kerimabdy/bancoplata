@@ -5,15 +5,15 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.roundToInt
 import kotlin.random.Random
-import androidx.compose.runtime.State
 import tech.bashga.plata.designsystem.components.ButtonStyle
 import tech.bashga.plata.designsystem.components.CardThumb
 import tech.bashga.plata.designsystem.components.CardThumbKind
-import tech.bashga.plata.designsystem.components.Icon
-import tech.bashga.plata.designsystem.icons.PlataIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -45,9 +45,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.imageResource
 import plata.shared.generated.resources.Res
-import plata.shared.generated.resources.raster_dialog_snowflake
+import plata.shared.generated.resources.raster_dialog_reissue_spin
+import plata.shared.generated.resources.raster_dialog_snowflake_spin
 import tech.bashga.plata.data.AppRepository
 import tech.bashga.plata.data.AppSnapshot
 import tech.bashga.plata.data.CardId
@@ -194,9 +196,9 @@ fun CardDetailsScreen(card: CardId, onTransactions: () -> Unit) {
 // CardOverview's 51-high header box starts 44 below the sheet top (3b3eaed7: y 113)
 private val OverviewTop = 44.dp
 private val SwipeVelocity = 300f
-// fa8cfa51: the 3D snowflake art (82×84 crop) starts 69 under the dialog top
-private val SnowflakeWidth = 82.dp
-private val SnowflakeHeight = 84.33.dp
+// fa8cfa51: the 3D snowflake art (82×84 crop) starts 69 under the dialog top; the reissue art shares its box
+private val SpinArtWidth = 82.dp
+private val SpinArtHeight = 84.33.dp
 private val SnowflakeTop = 69.dp
 // fa8cfa51: inside the Dimmed sheet the dialog sits 3 higher than DialogPlacement's screen-level inset
 private val FreezeDialogLift = 3.dp
@@ -277,14 +279,7 @@ fun CardDetailsContent(state: CardDetailsState, onAction: (CardDetailsAction) ->
                         "Freeze card",
                         body = "No charges can be made. Unfreeze it\nwhenever you want.",
                         onClose = close,
-                        mediaContent = {
-                            val turn = spinning(SnowflakeTurnMillis)
-                            Image(
-                                painterResource(Res.drawable.raster_dialog_snowflake),
-                                null,
-                                Modifier.size(SnowflakeWidth, SnowflakeHeight).graphicsLayer { rotationZ = turn.value },
-                            )
-                        },
+                        mediaContent = { SpinArt(Res.drawable.raster_dialog_snowflake_spin, SnowflakeSpin) },
                         contentTop = SnowflakeTop,
                         actions = { Button("Freeze", { onAction(CardDetailsAction.ConfirmFreeze) }, Modifier.fillMaxWidth()) },
                     )
@@ -292,15 +287,7 @@ fun CardDetailsContent(state: CardDetailsState, onAction: (CardDetailsAction) ->
                         "Reissue card",
                         body = "Get new card details for safer online\npurchases. Services linked to your current\ndetails won’t need updating.",
                         onClose = close,
-                        mediaContent = {
-                            val turn = spinning(RefreshTurnMillis)
-                            Icon(
-                                PlataIcons.Refresh,
-                                Modifier.graphicsLayer { rotationZ = turn.value },
-                                size = DialogGlyphSize,
-                                brush = PlataTheme.gradients.glyph,
-                            )
-                        },
+                        mediaContent = { SpinArt(Res.drawable.raster_dialog_reissue_spin, ReissueSpin) },
                         actions = { Button("Reissue", { onAction(CardDetailsAction.ConfirmReissue) }, Modifier.fillMaxWidth()) },
                     )
                     CardDetailsOverlay.DiscardConfirm -> Dialog(
@@ -316,15 +303,36 @@ fun CardDetailsContent(state: CardDetailsState, onAction: (CardDetailsAction) ->
     }
 }
 
-private const val SnowflakeTurnMillis = 8_000
-private const val RefreshTurnMillis = 1_600
-private val DialogGlyphSize = 64.dp
+/** A frame sheet rendered by the plata-3d-icon spin preset: [frames] cells of [cell] laid out [columns] wide. */
+private class SpinSheet(val frames: Int, val columns: Int, val cell: Dp)
 
+// the snowflake repeats every 60°, so 48 frames of a 60° turn make the whole loop at half the arrows' speed
+private val SnowflakeSpin = SpinSheet(frames = 48, columns = 7, cell = 88.dp)
+private val ReissueSpin = SpinSheet(frames = 72, columns = 9, cell = 97.67.dp)
+private const val SpinFps = 60
+
+// the cell overhangs the box so the art keeps fa8cfa51's scale
 @Composable
-private fun spinning(periodMillis: Int): State<Float> =
-    rememberInfiniteTransition(label = "spin").animateFloat(
+private fun SpinArt(sheet: DrawableResource, spin: SpinSheet) {
+    val bitmap = imageResource(sheet)
+    val frame by rememberInfiniteTransition(label = "spin").animateFloat(
         0f,
-        360f,
-        infiniteRepeatable(tween(periodMillis, easing = LinearEasing)),
-        label = "angle",
+        spin.frames.toFloat(),
+        infiniteRepeatable(tween(spin.frames * 1_000 / SpinFps, easing = LinearEasing)),
+        label = "frame",
     )
+    Spacer(
+        Modifier.size(SpinArtWidth, SpinArtHeight).drawBehind {
+            val index = frame.toInt().coerceAtMost(spin.frames - 1)
+            val source = bitmap.width / spin.columns
+            val side = spin.cell.toPx()
+            drawImage(
+                bitmap,
+                srcOffset = IntOffset(index % spin.columns * source, index / spin.columns * source),
+                srcSize = IntSize(source, source),
+                dstOffset = IntOffset(((size.width - side) / 2).roundToInt(), ((size.height - side) / 2).roundToInt()),
+                dstSize = IntSize(side.roundToInt(), side.roundToInt()),
+            )
+        },
+    )
+}
