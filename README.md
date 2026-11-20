@@ -2,7 +2,13 @@
 
 A rebuild of Plata's mobile banking app in Compose Multiplatform. It runs on Android, iOS and the web from one shared codebase. I made it from 123 screenshots, without ever using the real app.
 
-**[Try the web demo](https://bancoplata.netlify.app/)**
+| iOS | Android |
+| :---: | :---: |
+| ![Home screen on iPhone](docs/images/home-ios.png) | ![Home screen on Android](docs/images/home-android.png) |
+
+## Web version
+
+The same app also runs in the browser, built with Compose for WebAssembly. No install needed: **[bancoplata.netlify.app](https://bancoplata.netlify.app/)**. It needs a recent browser (see [Running it](#running-it)).
 
 ## What's in the repo
 
